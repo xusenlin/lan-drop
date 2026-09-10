@@ -9,12 +9,16 @@ export component BrandHeader inherits HorizontalLayout {
 
     // 喵咪图标。圆角是烤进 PNG 的 alpha 通道的，不能靠 Slint 的 clip：
     // 软件渲染器的 combine_clip 直接忽略 border-radius（源码里就写着 TODO）。
-    Rectangle {
-        width: 48px;
-        Image {
-            source: @image-url("../../assets/app-icon-256.png");
-            image-fit: contain;
-            width: parent.width; height: parent.width;
+    // 固定尺寸的子项在横向布局里顶对齐，图标和状态胶囊都要自己居中。
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: 48px; height: 48px;
+            Image {
+                source: @image-url("../../assets/app-icon-256.png");
+                image-fit: contain;
+                width: parent.width; height: parent.height;
+            }
         }
     }
     VerticalLayout {
@@ -22,23 +26,26 @@ export component BrandHeader inherits HorizontalLayout {
         Text { text: "LAN Drop"; font-size: Theme.font-title; font-weight: 700; color: Theme.brand-title; }
         Text { text: "Right here. Effortless sharing."; font-size: Theme.font-tiny; color: Theme.brand-sub; }
     }
-    Rectangle {
-        width: 128px; height: 32px; border-radius: 16px;
-        background: root.online ? Theme.online-bg : Theme.offline-bg;
-        // 圆点用图形画，不用 ● —— 它和正文混在一行，没法单独换字体。
-        HorizontalLayout {
-            alignment: center; spacing: 7px;
-            VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 7px; height: 7px; border-radius: 3.5px;
-                    background: root.online ? Theme.online-text : Theme.offline-text;
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: 128px; height: 32px; border-radius: 16px;
+            background: root.online ? Theme.online-bg : Theme.offline-bg;
+            // 圆点用图形画，不用 ● —— 它和正文混在一行，没法单独换字体。
+            HorizontalLayout {
+                alignment: center; spacing: 7px;
+                VerticalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 7px; height: 7px; border-radius: 3.5px;
+                        background: root.online ? Theme.online-text : Theme.offline-text;
+                    }
                 }
-            }
-            Text {
-                text: root.online ? "Server running" : "Server stopped";
-                color: root.online ? Theme.online-text : Theme.offline-text;
-                font-size: Theme.font-tiny; vertical-alignment: center;
+                Text {
+                    text: root.online ? "Server running" : "Server stopped";
+                    color: root.online ? Theme.online-text : Theme.offline-text;
+                    font-size: Theme.font-tiny; vertical-alignment: center;
+                }
             }
         }
     }

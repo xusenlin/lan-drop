@@ -1,4 +1,4 @@
-import { ScrollView } from "std-widgets.slint";
+import { ListView } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 import { Action } from "action.slint";
 import { Icon } from "icon.slint";
@@ -11,7 +11,7 @@ export component SharedPanel inherits Rectangle {
     in property <string> total-size;
     in property <[FileRow]> files;
     callback refresh(); callback open-folder();
-    callback copy-text(string); callback open-file(string);
+    callback copy-text(string); callback open-file(string); callback delete-file(string);
 
     background: Theme.card-bg;
     border-radius: 16px;
@@ -21,9 +21,12 @@ export component SharedPanel inherits Rectangle {
         padding: 22px; spacing: 18px;
         HorizontalLayout {
             height: 42px; spacing: 12px;
-            Rectangle {
-                width: 40px; height: 40px; border-radius: 12px; background: #edf4ed;
-                Icon { source: @image-url("../icons/grid.svg"); x: 10px; y: 10px; width: 20px; height: 20px; }
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 40px; height: 40px; border-radius: 12px; background: #edf4ed;
+                    Icon { source: @image-url("../icons/grid.svg"); x: 10px; y: 10px; width: 20px; height: 20px; }
+                }
             }
             VerticalLayout {
                 spacing: 5px; alignment: center;
@@ -33,7 +36,10 @@ export component SharedPanel inherits Rectangle {
                     color: Theme.muted; font-size: Theme.font-micro;
                 }
             }
-            Action { width: 100px; height: 32px; label: "Refresh"; icon: @image-url("../icons/refresh.svg"); quiet: true; clicked => { root.refresh(); } }
+            VerticalLayout {
+                alignment: center;
+                Action { width: 100px; height: 32px; label: "Refresh"; icon: @image-url("../icons/refresh.svg"); quiet: true; clicked => { root.refresh(); } }
+            }
         }
         Rectangle { height: 1px; background: Theme.border; }
         HorizontalLayout {
@@ -42,15 +48,16 @@ export component SharedPanel inherits Rectangle {
             Text { text: "Syncs every 2 seconds"; horizontal-alignment: right; color: Theme.muted; font-size: Theme.font-micro; }
         }
         if root.file-count == 0: EmptyState { }
-        if root.file-count > 0: ScrollView {
-            VerticalLayout {
-                spacing: 8px;
-                for file in root.files: FileRowItem {
+        if root.file-count > 0: ListView {
+            for file in root.files: Rectangle {
+                height: 84px;
+                FileRowItem {
+                    y: 0; width: parent.width; height: 76px;
                     file: file;
                     copy-text(name) => { root.copy-text(name); }
                     open-file(name) => { root.open-file(name); }
+                    delete-file(name) => { root.delete-file(name); }
                 }
-                Rectangle { vertical-stretch: 1; }
             }
         }
         Rectangle { height: 1px; background: Theme.border; }

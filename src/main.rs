@@ -1,5 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
+mod qr;
 mod server;
 mod store;
 
@@ -110,12 +111,24 @@ fn run() -> Result<()> {
         return Ok(());
     }
 
-    slint::platform::set_platform(Box::new(i_slint_backend_winit::Backend::new()?))?;
+    // 默认走 GPU 渲染，拿不到 OpenGL 时 winit 后端会自己回退到软件渲染；
+    // 驱动能初始化但画得慢的机器，可以用 SLINT_BACKEND=winit-software 手动指定。
+    let renderer = std::env::var("SLINT_BACKEND")
+        .ok()
+        .map(|name| name.trim_start_matches("winit-").to_string());
+    slint::platform::set_platform(Box::new(
+        i_slint_backend_winit::Backend::new_with_renderer_by_name(renderer.as_deref())?,
+    ))?;
     let ui = AppWindow::new()?;
     let theme = ui.global::<Theme>();
     theme.set_font_family(ui_font_family().into());
     theme.set_symbol_font(symbol_font_family().into());
     ui.set_server_url(url.clone().into());
+    let has_lan_address = !url.starts_with("http://127.");
+    ui.set_has_lan_address(has_lan_address);
+    if has_lan_address {
+        ui.set_server_qr(slint::Image::from_rgba8(qr::encode(&url)?));
+    }
     ui.set_all_urls(urls.join("  ·  ").into());
     ui.set_data_path(store.root().display().to_string().into());
     ui.set_status("Ready · devices on this network can open the address above".into());
@@ -256,6 +269,39 @@ fn run() -> Result<()> {
                 Err(e) => e.to_string().into(),
             });
         }
+    });
+    let delete_store = store.clone();
+    let delete_tx = tx.clone();
+    let handle = runtime.handle().clone();
+    ui.on_delete_file(move |name| {
+        let store = delete_store.clone();
+        let tx = delete_tx.clone();
+        let name = name.to_string();
+        handle.spawn(async move {
+            // 删除不进回收站、撤不回来，先用系统对话框确认一次。
+            let confirmed = rfd::AsyncMessageDialog::new()
+                .set_title("Delete file")
+                .set_description(format!(
+                    "Delete \"{name}\" from the shared folder?\nThis cannot be undone."
+                ))
+                .set_level(rfd::MessageLevel::Warning)
+                .set_buttons(rfd::MessageButtons::YesNo)
+                .show()
+                .await;
+            if confirmed != rfd::MessageDialogResult::Yes {
+                return;
+            }
+            let _ = tokio::task::spawn_blocking(move || {
+                let _ = tx.send(Update::Status(match store.delete(&name) {
+                    Ok(()) => format!("Deleted {name}"),
+                    Err(e) => format!("Could not delete {name}: {e}"),
+                }));
+                if let Ok(files) = store.list() {
+                    let _ = tx.send(Update::Files(files));
+                }
+            })
+            .await;
+        });
     });
     let refresh_store = store.clone();
     let refresh_tx = tx.clone();

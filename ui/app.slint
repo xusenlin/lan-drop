@@ -22,6 +22,8 @@ export component AppWindow inherits Window {
     in property <bool> wide-layout: true;
 
     in property <string> server-url;
+    in property <image> server-qr;
+    in property <bool> has-lan-address;
     in property <string> all-urls;
     in property <string> data-path;
     in property <string> status;
@@ -36,6 +38,7 @@ export component AppWindow inherits Window {
     callback open-browser(); callback copy-address(); callback open-folder();
     callback pick-files(); callback paste-text(); callback save-text(string);
     callback open-file(string); callback copy-text(string); callback refresh();
+    callback delete-file(string);
     callback open-github();
 
     VerticalLayout {
@@ -45,6 +48,8 @@ export component AppWindow inherits Window {
 
         AddressCard {
             url: root.server-url;
+            qr-code: root.server-qr;
+            has-lan-address: root.has-lan-address;
             compact: root.compact;
             show-art: root.wide-layout;
             open-browser => { root.open-browser(); }
@@ -76,6 +81,7 @@ export component AppWindow inherits Window {
                 open-folder => { root.open-folder(); }
                 copy-text(name) => { root.copy-text(name); }
                 open-file(name) => { root.open-file(name); }
+                delete-file(name) => { root.delete-file(name); }
             }
         }
 

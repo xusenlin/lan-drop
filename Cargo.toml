@@ -1,6 +1,6 @@
 [package]
 name = "lan-drop"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 rust-version = "1.88"
 description = "A portable LAN file and text sharing app"
@@ -14,8 +14,10 @@ tokio = { version = "1", features = ["rt-multi-thread", "net", "fs", "io-util", 
 tokio-util = { version = "0.7", features = ["io", "rt"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-slint = { version = "=1.13.1", default-features = false, features = ["std", "compat-1-2", "backend-winit-x11", "renderer-software"] }
-i-slint-backend-winit = { version = "=1.13.1", features = ["x11", "renderer-software"] }
+# 优先用 GPU 渲染：软件光栅化滚动文件列表只有 20 帧，FemtoVG 能跑满刷新率。
+# 软件渲染继续编进来，拿不到 OpenGL 的机器（老虚拟机、无显卡服务器）会自动回退。
+slint = { version = "=1.13.1", default-features = false, features = ["std", "compat-1-2", "backend-winit-x11", "renderer-femtovg", "renderer-software"] }
+i-slint-backend-winit = { version = "=1.13.1", features = ["x11", "renderer-femtovg", "renderer-software"] }
 if-addrs = "0.14"
 open = "5"
 rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
@@ -25,6 +27,8 @@ libc = "0.2"
 arboard = { version = "3.6", default-features = false }
 # 已由 Slint 的 image-decoders 引入；这里只解码内嵌的图标 PNG 给窗口用。
 image = { version = "0.25", default-features = false, features = ["png"] }
+# 只用二维码编码器，直接生成 Slint 像素，不引入额外图像格式或运行时。
+qrcode = { version = "0.14", default-features = false }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # The optional system file picker must not make libwayland a launch dependency.
@@ -48,6 +52,6 @@ opt-level = "z"
 # 去掉展开表还能再省几百 KB。
 panic = "abort"
 
-# 软件渲染是纯 CPU 光栅化，是唯一真正吃指令数的地方，保持完整优化。
+# 回退用的软件渲染是纯 CPU 光栅化，是唯一真正吃指令数的地方，保持完整优化。
 [profile.release.package.i-slint-core]
 opt-level = 3

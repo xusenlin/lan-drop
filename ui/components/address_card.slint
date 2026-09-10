@@ -4,17 +4,23 @@ import { Icon } from "icon.slint";
 
 export component AddressCard inherits Rectangle {
     in property <string> url;
+    in property <image> qr-code;
+    in property <bool> has-lan-address;
     in property <bool> compact;
     in property <bool> show-art;
     callback open-browser();
     callback copy-address();
 
-    height: root.compact ? 114px : 144px;
+    // 二维码与右侧两个按钮同高，边框内留出静区呼吸空间。
+    private property <length> qr-size: 38px * 2 + (root.compact ? 6px : 10px);
+    height: root.compact ? (root.has-lan-address ? 132px : 114px) : 144px;
     background: Theme.hero-bg;
     border-radius: 18px;
 
     HorizontalLayout {
         padding: root.compact ? 18px : 24px; spacing: 20px;
+        padding-top: root.compact ? 12px : 18px;
+        padding-bottom: root.compact ? 12px : 18px;
         VerticalLayout {
             horizontal-stretch: 1;
             alignment: center; spacing: root.compact ? 6px : 10px;
@@ -24,15 +30,39 @@ export component AddressCard inherits Rectangle {
                 Text { text: "LOCAL NETWORK ADDRESS"; color: #b9d5c6; font-size: Theme.font-micro; font-weight: 600; letter-spacing: 1px; }
             }
             Text {
-                height: 34px;
+                // 不要写死高度：地址用的 26px 在苹方下行高约 36px，
+                // 写死 34px 会被 GPU 渲染器整行裁掉，直接看不到地址。
                 text: root.url; color: #f7fbf6; font-size: Theme.font-url;
                 font-weight: 700;
                 vertical-alignment: center; horizontal-alignment: left;
                 TouchArea { mouse-cursor: pointer; clicked => { root.open-browser(); } }
             }
-            Text { text: "Same network, just open a browser."; color: #b9d5c6; font-size: Theme.font-tiny; }
+            Text {
+                text: root.has-lan-address ? "Scan to open on your phone. Use the same Wi-Fi." : "Connect to a local network, then restart to share with your phone.";
+                color: #b9d5c6; font-size: Theme.font-tiny;
+                wrap: word-wrap;
+            }
         }
-        if root.show-art: Image {
+        if root.has-lan-address: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: root.qr-size; height: root.qr-size;
+                border-radius: 10px;
+                background: #b9d5c612;
+                border-width: 1px;
+                border-color: #b9d5c633;
+                Image {
+                    source: root.qr-code;
+                    width: root.qr-size + 10px; height: root.qr-size + 10px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    image-fit: contain;
+                    image-rendering: pixelated;
+                    accessible-label: "Scan to open " + root.url + " on a phone connected to the same network";
+                }
+            }
+        }
+        if !root.has-lan-address && root.show-art: Image {
             source: @image-url("../icons/devices.svg");
             width: 166px; image-fit: contain;
         }

@@ -10,8 +10,16 @@ export component DropCard inherits Rectangle {
     height: root.compact ? 182px : 218px;
     border-radius: 16px;
     background: root.dragging ? Theme.drop-active-bg : Theme.card-bg;
-    border-width: root.dragging ? 2px : 1px;
-    border-color: root.dragging ? Theme.brand : Theme.border;
+    border-width: root.dragging ? 2px : 0px;
+    border-color: Theme.brand;
+
+    // 使用 SVG 图像显示圆角虚线，兼容软件渲染后端。
+    // 两种高度分别绘制，避免紧凑布局把圆角和竖向虚线压扁。
+    if !root.dragging: Image {
+        source: root.compact ? @image-url("../icons/drop-border-compact.svg") : @image-url("../icons/drop-border.svg");
+        width: parent.width; height: parent.height;
+        image-fit: fill;
+    }
 
     VerticalLayout {
         padding: root.compact ? 14px : 20px; spacing: root.compact ? 6px : 10px;

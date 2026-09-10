@@ -179,6 +179,21 @@ impl Store {
         Ok(file)
     }
 
+    /// 删除共享目录里的一个文件。只认普通文件：符号链接和目录一律拒绝，
+    /// 免得顺着链接删到共享目录外面去。
+    pub fn delete(&self, name: &str) -> Result<()> {
+        validate_name(name)?;
+        let path = self.root.join(name);
+        if !fs::symlink_metadata(&path)
+            .context("This file is already gone")?
+            .is_file()
+        {
+            bail!("Not a regular file");
+        }
+        fs::remove_file(&path)?;
+        Ok(())
+    }
+
     pub fn read_text(&self, name: &str) -> Result<String> {
         let file = self.open(name)?;
         if file.metadata()?.len() > MAX_TEXT_BYTES as u64 {
@@ -372,6 +387,37 @@ mod tests {
 
         // 被拒绝的导入不该在共享目录里留下痕迹。
         assert_eq!(store.list().unwrap().len(), 2);
+    }
+    #[test]
+    fn delete_removes_only_files_inside_the_shared_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::new(dir.path().join("data")).unwrap();
+        let outside = dir.path().join("secret");
+        fs::write(&outside, "secret").unwrap();
+        let name = store.save_text("Meeting notes").unwrap();
+
+        // 目录名、路径穿越、隐藏的临时文件都不接受。
+        fs::create_dir(store.root().join("folder")).unwrap();
+        for bad in ["../secret", "folder", "nope.txt", ".lan-drop-x"] {
+            assert!(store.delete(bad).is_err(), "{bad}");
+        }
+        assert!(outside.exists());
+
+        store.delete(&name).unwrap();
+        assert!(store.list().unwrap().is_empty());
+        // 删过一次之后再删就是「文件已经不在了」。
+        assert!(store.delete(&name).is_err());
+    }
+    #[cfg(unix)]
+    #[test]
+    fn delete_never_follows_a_symlink() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::new(dir.path().join("data")).unwrap();
+        let outside = dir.path().join("secret");
+        fs::write(&outside, "secret").unwrap();
+        std::os::unix::fs::symlink(&outside, store.root().join("leak.txt")).unwrap();
+        assert!(store.delete("leak.txt").is_err());
+        assert!(outside.exists());
     }
     #[cfg(unix)]
     #[test]

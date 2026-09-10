@@ -7,6 +7,7 @@ export component FileRowItem inherits Rectangle {
     in property <FileRow> file;
     callback copy-text(string);
     callback open-file(string);
+    callback delete-file(string);
 
     height: 76px;
     background: hover.has-hover ? #f0f5f0 : Theme.row-bg;
@@ -15,35 +16,52 @@ export component FileRowItem inherits Rectangle {
 
     HorizontalLayout {
         padding: 12px; spacing: 12px;
-        Rectangle {
-            width: 42px; height: 48px; border-radius: 10px;
-            background: root.file.is-text ? Theme.tag-text-bg : Theme.tag-file-bg;
-            VerticalLayout {
-                alignment: center; spacing: 3px;
-                HorizontalLayout {
-                    alignment: center;
-                    Icon {
-                        source: root.file.is-text ? @image-url("../icons/note.svg") : @image-url("../icons/file.svg");
-                        width: 21px; height: 21px;
-                        ink: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
+        // 固定尺寸的子项在横向布局里是顶对齐的，所以图标和按钮都各自包一层
+        // 居中的纵向布局，才能和中间的文件名一起垂直居中。
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 42px; height: 48px; border-radius: 10px;
+                background: root.file.is-text ? Theme.tag-text-bg : Theme.tag-file-bg;
+                VerticalLayout {
+                    alignment: center; spacing: 3px;
+                    HorizontalLayout {
+                        alignment: center;
+                        Icon {
+                            source: root.file.is-text ? @image-url("../icons/note.svg") : @image-url("../icons/file.svg");
+                            width: 21px; height: 21px;
+                            ink: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
+                        }
                     }
-                }
-                Text {
-                    text: root.file.is-text ? "TXT" : "FILE";
-                    color: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
-                    font-size: 8px; font-weight: 700; horizontal-alignment: center;
+                    Text {
+                        text: root.file.is-text ? "TXT" : "FILE";
+                        color: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
+                        font-size: 8px; font-weight: 700; horizontal-alignment: center;
+                    }
                 }
             }
         }
         VerticalLayout {
+            horizontal-stretch: 1;
             spacing: 7px; alignment: center;
             Text { text: root.file.name; color: Theme.file-name; font-size: Theme.font-small; font-weight: 600; overflow: elide; }
             Text { text: root.file.detail; color: Theme.file-detail; font-size: Theme.font-micro; overflow: elide; }
         }
-        if root.file.is-text: Action {
-            width: 78px; height: 30px; label: "Copy"; icon: @image-url("../icons/copy.svg"); quiet: true;
-            clicked => { root.copy-text(root.file.name); }
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                spacing: 8px;
+                if root.file.is-text: Action {
+                    width: 78px; height: 30px; label: "Copy"; icon: @image-url("../icons/copy.svg"); quiet: true;
+                    clicked => { root.copy-text(root.file.name); }
+                }
+                Action { width: 78px; height: 30px; label: "Open"; icon: @image-url("../icons/external.svg"); quiet: true; clicked => { root.open-file(root.file.name); } }
+                Action {
+                    width: 82px; height: 30px; label: "Delete"; icon: @image-url("../icons/trash.svg");
+                    quiet: true; danger: true;
+                    clicked => { root.delete-file(root.file.name); }
+                }
+            }
         }
-        Action { width: 78px; height: 30px; label: "Open"; icon: @image-url("../icons/external.svg"); quiet: true; clicked => { root.open-file(root.file.name); } }
     }
 }

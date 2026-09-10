@@ -7,11 +7,13 @@ export component Action inherits Rectangle {
     in property <bool> primary: false;
     in property <bool> quiet: false;
     in property <bool> on-dark: false;
+    in property <bool> danger: false;
     in property <bool> enabled: true;
     callback clicked();
 
     private property <color> ink: !root.enabled ? Theme.action-disabled-text
-        : root.on-dark ? #f1f8f3 : root.primary ? white : Theme.action-text;
+        : root.on-dark ? #f1f8f3 : root.primary ? white
+        : root.danger ? Theme.danger-text : Theme.action-text;
     height: 38px;
     preferred-width: 88px;
     min-width: content.min-width;
@@ -22,7 +24,8 @@ export component Action inherits Rectangle {
     background: !root.enabled ? Theme.action-disabled-bg
         : root.on-dark ? (touch.has-hover ? #ffffff25 : #ffffff10)
         : root.primary ? (touch.pressed ? #115239 : touch.has-hover ? Theme.brand-hover : Theme.brand)
-        : touch.has-hover ? Theme.action-hover-bg : root.quiet ? transparent : Theme.action-bg;
+        : touch.has-hover ? (root.danger ? Theme.danger-hover-bg : Theme.action-hover-bg)
+        : root.quiet ? transparent : Theme.action-bg;
     forward-focus: focus;
     accessible-role: button;
     accessible-label: root.label;

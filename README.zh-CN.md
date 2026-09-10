@@ -16,9 +16,9 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 | 平台 | 程序 | 下载 |
 | --- | --- | --- |
-| macOS / Apple Silicon | 3.4 MB | 2.3 MB |
-| Windows / x64 | 4.3 MB | 2.1 MB |
-| Linux / x64 | 6.8 MB | 3.0 MB |
+| macOS / Apple Silicon | 3.7 MB | 2.4 MB |
+| Windows / x64 | 4.7 MB | 2.2 MB |
+| Linux / x64 | 7.3 MB | 3.1 MB |
 
 放哪儿都能跑，删掉就干净了，不写注册表、不装服务、不留后台进程。Windows 版静态链接 CRT，不用先装 VC++ 运行库。
 
@@ -31,7 +31,7 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 测试环境：Apple M5 Pro（macOS 26.5、APFS SSD），rustc 1.88.0 配仓库里的 release 配置；1 GiB 随机数据经 HTTP 走 `127.0.0.1`，文件在系统缓存中，五次取最好，校验和比对一致。这组数字的意思是"程序本身不是瓶颈"，不是你实际能看到的传输速度——真实局域网的上限由链路决定，千兆以太网大约 113 MB/s。
 
-**软件渲染，不挑机器。** 不依赖 GPU 驱动和 OpenGL，虚拟机、远程桌面、老机器上都能正常显示。
+**GPU 渲染，画不了就退回软件渲染。** 窗口走 OpenGL 绘制，滚动和缩放都跟手。没有可用 GL 驱动的场合——虚拟机、远程桌面、老机器——会自动退回内置的软件渲染，照样正常显示，也可以用 `SLINT_BACKEND=winit-software` 手动指定走软件渲染。两条路都不用额外装东西：Linux 版的动态依赖仍然只有上面那三个，libGL / libEGL 是运行时有才打开。
 
 **只在局域网里，数据不出本机。** 没有账号、没有云端、没有遥测，文件就躺在 `LanDropData/` 目录里，随时能直接打开。对面设备只要有浏览器就行，不用装任何东西。
 
@@ -51,9 +51,9 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 | 平台 | 文件 | 下载 | 解压得到 |
 | --- | --- | --- | --- |
-| macOS / Apple Silicon | `lan-drop-<版本>-macos-arm64.zip` | 2.3 MB | `LAN Drop.app` |
-| Windows / x64 | `lan-drop-<版本>-windows-x64.zip` | 2.1 MB | `lan-drop-<版本>-windows-x64.exe` |
-| Linux / x64 | `lan-drop-<版本>-linux-x64.zip` | 3.0 MB | `lan-drop-<版本>-linux-x64` |
+| macOS / Apple Silicon | `lan-drop-<版本>-macos-arm64.zip` | 2.4 MB | `LAN Drop.app` |
+| Windows / x64 | `lan-drop-<版本>-windows-x64.zip` | 2.2 MB | `lan-drop-<版本>-windows-x64.exe` |
+| Linux / x64 | `lan-drop-<版本>-linux-x64.zip` | 3.1 MB | `lan-drop-<版本>-linux-x64` |
 
 发布页的 `SHA256SUMS` 列出了每个压缩包的校验和。
 
@@ -65,7 +65,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 
 界面是英文的，下面用到的按钮名保持与界面一致。
 
-桌面端显示实际访问地址，例如 `http://192.168.1.10:8765`。点击地址或 Open page 可直接访问，Copy address 方便发送给其他设备。
+桌面端显示实际访问地址，例如 `http://192.168.1.10:8765`。手机连接同一局域网后，扫描地址旁的二维码即可打开共享页面，上传或下载文件；二维码在本机生成，包含实际 IP 和端口。点击地址或 Open page 可直接访问，Copy address 方便发送给其他设备。只有本机回环地址时不显示二维码，请连接局域网后重新启动。
 
 - 将文件拖进桌面窗口或网页，也可以点击 Choose files，支持多文件选择。
 - 在文字框粘贴内容，点击 Save and share，以 UTF-8 `.txt` 文件保存。文件名取内容开头的 28 个字符，换行和文件名不允许的字符换成空格；开头没有可用字符时用 `text-<时间戳>.txt`。
@@ -79,6 +79,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 
   `.app` 的数据不会写进 bundle 内部，那样会破坏代码签名。装进 `/Applications` 后之所以换位置，是因为那里属主为 `root:admin`——管理员账号能写，会被悄悄塞进一个用户数据目录，而非管理员账号根本写不了。窗口底部始终显示当前实际路径。
 - 桌面与网页每 2 秒自动更新共享列表。网页支持名称搜索、类型筛选、文字预览与复制、文件下载、上传进度。
+- 只有桌面端能删除：文件行上的 Delete 按钮会先弹确认框，确认后直接删除，不进回收站。网页端只能上传下载，其他设备上的访客删不掉东西。
 - 同名文件自动增加 `(1)`、`(2)`，不会覆盖已有文件。上传与复制使用临时文件，完成后才出现在列表中；失败请求自动清理临时文件。
 - 单文件最大 10 GiB，文字最大 1 MiB；文件夹请先压缩。中断的文件需要重新上传，暂不支持断点续传。
 - 可以直接在 `LanDropData/` 内增删普通文件，列表会同步更新；不共享隐藏文件、子目录或符号链接。
@@ -88,7 +89,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 
 ```sh
 './LAN Drop.app/Contents/MacOS/lan-drop' --port 9000
-./lan-drop-1.0.0-linux-x64 --headless --port 8765
+./lan-drop-1.0.1-linux-x64 --headless --port 8765
 ```
 
 `--headless` 只启动 HTTP 服务，适合无桌面 Linux；`--port 0` 自动分配空闲端口，地址写入标准输出。默认桌面启动在 Windows 不显示控制台。
@@ -110,7 +111,7 @@ task check          # rustfmt + clippy
 
 `task build` 需要在 macOS 主机执行；Linux/Windows 开发机可使用 `task build:native`。默认三平台 macOS 产物是 arm64。跨平台工具链定义在 `scripts/Dockerfile.cross`，镜像名为 `lan-drop-cross:rust-1.88-v1`；Cargo registry 与编译产物存储在项目专用 Docker volumes 中。`Cargo.lock` 固定依赖，构建使用 `--locked`。
 
-**运行时无需 Rust、Python、Docker、Node.js、Qt、WebView、独立 HTML 或资源文件。** Slint 界面提前编译，网页通过 `include_str!` 嵌入程序，使用软件渲染。系统自带的动态库和桌面服务仍然必要：macOS 系统框架、Windows 系统 DLL；Linux 为 glibc 桌面系统（交叉构建基于 Debian 12，glibc 2.36+），需要 X11 或 XWayland，文件选择器使用系统桌面 Portal。纯 Wayland 且没有 XWayland 的桌面不在当前支持范围内，可使用 `--headless`。界面文案是英文，但共享的文件名可能是任何语言，而软件渲染器整段文字只用一个字型、不做逐字回退，所以仍然点名一个带汉字的系统字体：macOS 用苹方，Windows 用微软雅黑，Linux 交给 fontconfig 的 sans-serif，因此 Linux 需要自行安装中文字体（如 Noto Sans CJK SC）。选中的字体缺汉字时会显示为方块，可用 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
+**运行时无需 Rust、Python、Docker、Node.js、Qt、WebView、独立 HTML 或资源文件。** Slint 界面提前编译，网页通过 `include_str!` 嵌入程序，渲染走 OpenGL，软件渲染作为回退一并编进程序。系统自带的动态库和桌面服务仍然必要：macOS 系统框架、Windows 系统 DLL；Linux 为 glibc 桌面系统（交叉构建基于 Debian 12，glibc 2.36+），需要 X11 或 XWayland，文件选择器使用系统桌面 Portal。纯 Wayland 且没有 XWayland 的桌面不在当前支持范围内，可使用 `--headless`。界面文案是英文，但共享的文件名可能是任何语言，而回退用的软件渲染器整段文字只用一个字型、不做逐字回退，所以仍然点名一个带汉字的系统字体：macOS 用苹方，Windows 用微软雅黑，Linux 交给 fontconfig 的 sans-serif，因此 Linux 需要自行安装中文字体（如 Noto Sans CJK SC）。选中的字体缺汉字时会显示为方块，可用 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
 
 ## 网络与数据
 
@@ -124,6 +125,7 @@ task check          # rustfmt + clippy
 src/main.rs          桌面端、拖拽、剪贴板、网卡地址、启动与生命周期
 src/store.rs         共享目录、命名、流式复制、原子保存
 src/server.rs        Axum HTTP API、流式上传下载
+src/qr.rs            共享地址的二维码，直接生成 Slint 像素
 ui/app.slint         根窗口：与 Rust 交互的状态、回调与组件装配
 ui/theme.slint       配色、字号，以及由 Rust 按平台写入的字体
 ui/types.slint       与 Rust 共享的结构体

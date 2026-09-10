@@ -16,9 +16,9 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 | Platform | Binary | Download |
 | --- | --- | --- |
-| macOS / Apple Silicon | 3.4 MB | 2.3 MB |
-| Windows / x64 | 4.3 MB | 2.1 MB |
-| Linux / x64 | 6.8 MB | 3.0 MB |
+| macOS / Apple Silicon | 3.7 MB | 2.4 MB |
+| Windows / x64 | 4.7 MB | 2.2 MB |
+| Linux / x64 | 7.3 MB | 3.1 MB |
 
 Drop it anywhere and run it; delete it and nothing is left behind. It writes no registry keys, installs no service and leaves no background process. The Windows build links the CRT statically, so there is no VC++ runtime to install first.
 
@@ -31,7 +31,7 @@ Drop it anywhere and run it; delete it and nothing is left behind. It writes no 
 
 Measured on an Apple M5 Pro (macOS 26.5, APFS SSD) with rustc 1.88.0 and the release profile in this repo: a 1 GiB random file over HTTP to `127.0.0.1`, warm in the page cache, best of five, checksum-verified. Read it as "the program is not the bottleneck" rather than as a speed you will see — on a real network you get whatever the link gives you, roughly 113 MB/s on gigabit Ethernet.
 
-**Software rendering, runs anywhere.** No GPU driver and no OpenGL required, so it displays correctly in virtual machines, over remote desktop and on old hardware.
+**GPU rendering, with a software fallback.** The window is drawn through OpenGL, which keeps scrolling and resizing smooth. Where no usable GL driver exists — a virtual machine, a remote desktop session, old hardware — it falls back to the built-in software renderer on its own and still displays correctly; `SLINT_BACKEND=winit-software` forces that path. Neither one needs anything installed: the Linux binary still lists only the three libraries above, and libGL / libEGL are opened at runtime only if they are there.
 
 **Stays on your LAN.** No account, no cloud, no telemetry. Files sit in a plain `LanDropData/` directory you can open at any time. The other device needs nothing but a browser.
 
@@ -51,9 +51,9 @@ Grab the file for your platform from the [latest release](https://github.com/xus
 
 | Platform | File | Download | Unpacks to |
 | --- | --- | --- | --- |
-| macOS / Apple Silicon | `lan-drop-<version>-macos-arm64.zip` | 2.3 MB | `LAN Drop.app` |
-| Windows / x64 | `lan-drop-<version>-windows-x64.zip` | 2.1 MB | `lan-drop-<version>-windows-x64.exe` |
-| Linux / x64 | `lan-drop-<version>-linux-x64.zip` | 3.0 MB | `lan-drop-<version>-linux-x64` |
+| macOS / Apple Silicon | `lan-drop-<version>-macos-arm64.zip` | 2.4 MB | `LAN Drop.app` |
+| Windows / x64 | `lan-drop-<version>-windows-x64.zip` | 2.2 MB | `lan-drop-<version>-windows-x64.exe` |
+| Linux / x64 | `lan-drop-<version>-linux-x64.zip` | 3.1 MB | `lan-drop-<version>-linux-x64` |
 
 `SHA256SUMS` in the release lists the checksum of each archive.
 
@@ -63,7 +63,7 @@ On macOS, unpack in Finder (double-click) rather than with the `unzip` command �
 
 macOS ships only the `.app`, with no separate bare binary — the contents are identical, but double-clicking a bare binary in Finder launches it through Terminal, which adds a stray terminal window and gives it no icon or Dock name. For command line use, call `LAN Drop.app/Contents/MacOS/lan-drop --headless` directly.
 
-The desktop window shows the real address, for example `http://192.168.1.10:8765`. Click the address or "Open page" to open it; "Copy address" copies it so you can send it to another device.
+The desktop window shows the real address, for example `http://192.168.1.10:8765`. Connect your phone to the same local network and scan the QR code beside the address to open the sharing page and upload or download files. The QR code is generated locally and includes the actual IP and port. Click the address or "Open page" to open it; "Copy address" copies it so you can send it to another device. When only a loopback address is available, the QR code is hidden; connect to a local network and restart the app.
 
 - Drag files onto the desktop window or the web page, or click "Choose files"; multiple files are supported.
 - Paste into the text box and click "Save and share" to store it as a UTF-8 `.txt` file. The file name is taken from the first 28 characters of the content, with newlines and characters that are illegal in file names replaced by spaces; if there is nothing usable at the start, `text-<timestamp>.txt` is used instead.
@@ -78,6 +78,7 @@ The desktop window shows the real address, for example `http://192.168.1.10:8765
   Data is never written inside the `.app` bundle, which would break its code signature. The location changes under `/Applications` because that directory is owned by `root:admin` — an admin account can write there and would silently end up with a user data directory inside a system folder, while a non-admin account cannot write there at all. The window footer always shows the path in use.
 
 - Both the desktop and the web page refresh the shared list every 2 seconds. The web page supports search by name, filtering by type, text preview and copy, downloads, and upload progress.
+- Only the desktop app can delete: the "Delete" button on a row asks for confirmation and then removes the file for good — it does not go to the trash. The web page uploads and downloads only, so a visitor on another device cannot delete anything.
 - Name collisions get `(1)`, `(2)` appended; existing files are never overwritten. Uploads and copies go through a temporary file and only appear in the list once complete; failed requests clean their temporary files up.
 - Up to 10 GiB per file and 1 MiB per text; compress folders first. An interrupted file has to be uploaded again — resumable uploads are not supported yet.
 - You can add or remove regular files in `LanDropData/` directly and the list follows along. Hidden files, subdirectories and symlinks are not shared.
@@ -87,7 +88,7 @@ It listens on `0.0.0.0:8765` by default; if that port is taken it tries the next
 
 ```sh
 './LAN Drop.app/Contents/MacOS/lan-drop' --port 9000
-./lan-drop-1.0.0-linux-x64 --headless --port 8765
+./lan-drop-1.0.1-linux-x64 --headless --port 8765
 ```
 
 `--headless` starts only the HTTP server, which suits a Linux box with no desktop; `--port 0` picks a free port and writes the address to stdout. A normal desktop launch shows no console window on Windows.
@@ -109,7 +110,7 @@ task check          # rustfmt + clippy
 
 `task build` has to run on a macOS host; on a Linux or Windows machine use `task build:native`. The macOS artifact from a full three-platform build is arm64. The cross toolchain is defined in `scripts/Dockerfile.cross` as image `lan-drop-cross:rust-1.88-v1`; the Cargo registry and build artifacts live in Docker volumes dedicated to this project. `Cargo.lock` pins dependencies and builds pass `--locked`.
 
-**At runtime it needs no Rust, Python, Docker, Node.js, Qt, WebView, or loose HTML and asset files.** The Slint UI is compiled ahead of time, the web page is embedded with `include_str!`, and rendering is done in software. Dynamic libraries and desktop services that ship with the OS are still required: system frameworks on macOS, system DLLs on Windows; on Linux a glibc desktop (the cross build targets Debian 12, glibc 2.36+) with X11 or XWayland, and the file picker uses the desktop portal. A pure Wayland desktop with no XWayland is out of scope for now — use `--headless` there. The interface text is English, but shared file names can be in any language, and the software renderer draws a whole string with one font — there is no per-glyph fallback. So the app picks a system font with CJK coverage: PingFang on macOS, Microsoft YaHei on Windows, and fontconfig's sans-serif on Linux, where a font such as Noto Sans CJK SC has to be installed. A font missing those characters renders them as boxes; `SLINT_DEFAULT_FONT` can point at a specific font file or directory.
+**At runtime it needs no Rust, Python, Docker, Node.js, Qt, WebView, or loose HTML and asset files.** The Slint UI is compiled ahead of time, the web page is embedded with `include_str!`, and rendering goes through OpenGL with the software renderer compiled in as a fallback. Dynamic libraries and desktop services that ship with the OS are still required: system frameworks on macOS, system DLLs on Windows; on Linux a glibc desktop (the cross build targets Debian 12, glibc 2.36+) with X11 or XWayland, and the file picker uses the desktop portal. A pure Wayland desktop with no XWayland is out of scope for now — use `--headless` there. The interface text is English, but shared file names can be in any language, and the software fallback draws a whole string with one font, with no per-glyph fallback. So the app picks a system font with CJK coverage: PingFang on macOS, Microsoft YaHei on Windows, and fontconfig's sans-serif on Linux, where a font such as Noto Sans CJK SC has to be installed. A font missing those characters renders them as boxes; `SLINT_DEFAULT_FONT` can point at a specific font file or directory.
 
 ## Network and data
 
@@ -123,6 +124,7 @@ File names and directory access are restricted: path traversal, symlinks and Win
 src/main.rs          desktop app, drag and drop, clipboard, interface addresses, startup and lifecycle
 src/store.rs         shared directory, naming, streaming copies, atomic saves
 src/server.rs        Axum HTTP API, streaming uploads and downloads
+src/qr.rs            QR code for the sharing address, drawn straight into Slint pixels
 ui/app.slint         root window: state, callbacks and component wiring shared with Rust
 ui/theme.slint       colors, type scale, and the per-platform font Rust fills in
 ui/types.slint       structs shared with Rust
