@@ -40,5 +40,14 @@ http-body-util = "0.1"
 
 [profile.release]
 strip = true
-lto = "thin"
+lto = "fat"
 codegen-units = 1
+# 这个 App 的瓶颈是网络和磁盘，不是指令数；按体积优化能省一半以上的下载量。
+opt-level = "z"
+# 界面和 HTTP 处理全程用 Result，没有靠 catch_unwind 兜底的地方，
+# 去掉展开表还能再省几百 KB。
+panic = "abort"
+
+# 软件渲染是纯 CPU 光栅化，是唯一真正吃指令数的地方，保持完整优化。
+[profile.release.package.i-slint-core]
+opt-level = 3
