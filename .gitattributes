@@ -1,0 +1,4 @@
+# GitHub 的语言统计只算主体代码。网页端是内嵌进二进制的单文件资源，
+# 构建脚本只在发版时跑，两者都不代表这个项目写的是什么。
+web/index.html linguist-detectable=false
+scripts/build.py linguist-detectable=false
