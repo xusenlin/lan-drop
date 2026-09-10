@@ -9,6 +9,8 @@ use std::{
 
 pub const MAX_TEXT_BYTES: usize = 1024 * 1024;
 pub const MAX_UPLOAD_BYTES: u64 = 10 * 1024 * 1024 * 1024;
+/// 文字文件用内容开头命名，列表里一眼能认出是哪一段。
+const TEXT_NAME_CHARS: usize = 28;
 
 #[derive(Clone)]
 pub struct Store {
@@ -128,8 +130,7 @@ impl Store {
         if text.len() > MAX_TEXT_BYTES {
             bail!("文字不能超过 1 MiB");
         }
-        let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
-        let name = format!("文字-{stamp}.txt");
+        let name = text_file_name(text);
         let mut temp = self.temporary()?;
         temp.write_all(text.as_bytes())?;
         temp.as_file().sync_all()?;
@@ -182,6 +183,35 @@ impl Store {
         }
         Ok(text)
     }
+}
+
+/// 取内容开头的 TEXT_NAME_CHARS 个字符做文件名；换行和文件名里不能出现的字符换成空格。
+/// 内容开头没有可用字符（纯符号、纯空白）或撞上保留名称时，退回时间戳命名。
+fn text_file_name(text: &str) -> String {
+    let stem: String = text
+        .trim_start()
+        .chars()
+        .take(TEXT_NAME_CHARS)
+        .map(|c| {
+            if c.is_control() || "/\\:*?\"<>|".contains(c) {
+                ' '
+            } else {
+                c
+            }
+        })
+        .collect();
+    let name = format!(
+        "{}.txt",
+        stem.trim_matches(|c: char| c == '.' || c.is_whitespace())
+    );
+    if validate_name(&name).is_ok() {
+        return name;
+    }
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    format!("文字-{stamp}.txt")
 }
 
 pub fn validate_name(name: &str) -> Result<()> {
@@ -265,6 +295,31 @@ mod tests {
         assert_eq!(store.read_text(&name).unwrap(), content);
         assert!(store.save_text("  \n").is_err());
         assert!(store.save_text(&"x".repeat(MAX_TEXT_BYTES + 1)).is_err());
+    }
+    #[test]
+    fn text_is_named_after_its_first_characters() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::new(dir.path().to_owned()).unwrap();
+        assert_eq!(store.save_text("会议纪要").unwrap(), "会议纪要.txt");
+        // 同样的开头不会互相覆盖。
+        assert_eq!(store.save_text("会议纪要").unwrap(), "会议纪要 (1).txt");
+        // 超过 28 个字符只留开头，换行与非法字符换成空格。
+        assert_eq!(
+            store
+                .save_text("  第一行\nhttps://example.com/a/b 后面还有很多内容")
+                .unwrap(),
+            "第一行 https   example.com a b.txt"
+        );
+        // 开头没有可用字符时退回时间戳。
+        let fallback = store.save_text("...\n").unwrap();
+        assert!(
+            fallback.starts_with("文字-") && fallback.ends_with(".txt"),
+            "{fallback}"
+        );
+        assert!(store.save_text("CON").unwrap().starts_with("文字-"));
+        for entry in store.list().unwrap() {
+            assert!(validate_name(&entry.name).is_ok(), "{}", entry.name);
+        }
     }
     #[cfg(unix)]
     #[test]
