@@ -41,9 +41,9 @@ export component FileRowItem inherits Rectangle {
             Text { text: root.file.detail; color: Theme.file-detail; font-size: Theme.font-micro; overflow: elide; }
         }
         if root.file.is-text: Action {
-            width: 65px; height: 30px; label: "复制"; icon: @image-url("../icons/copy.svg"); quiet: true;
+            width: 78px; height: 30px; label: "Copy"; icon: @image-url("../icons/copy.svg"); quiet: true;
             clicked => { root.copy-text(root.file.name); }
         }
-        Action { width: 65px; height: 30px; label: "打开"; icon: @image-url("../icons/external.svg"); quiet: true; clicked => { root.open-file(root.file.name); } }
+        Action { width: 78px; height: 30px; label: "Open"; icon: @image-url("../icons/external.svg"); quiet: true; clicked => { root.open-file(root.file.name); } }
     }
 }

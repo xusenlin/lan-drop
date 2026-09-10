@@ -23,12 +23,12 @@ export component DropCard inherits Rectangle {
             }
         }
         Text {
-            text: root.dragging ? "松开即可共享" : "把文件拖到这里";
+            text: root.dragging ? "Release to share" : "Drop files here";
             color: Theme.heading; font-size: Theme.font-heading; font-weight: 700;
             horizontal-alignment: center;
         }
-        Text { text: "支持多个文件 · 单个最大 10 GiB"; color: Theme.muted; font-size: Theme.font-micro; horizontal-alignment: center; }
+        Text { text: "Multiple files · up to 10 GiB each"; color: Theme.muted; font-size: Theme.font-micro; horizontal-alignment: center; }
         Rectangle { height: 2px; }
-        Action { label: "选择文件"; icon: @image-url("../icons/plus.svg"); clicked => { root.pick-files(); } }
+        Action { label: "Choose files"; icon: @image-url("../icons/plus.svg"); clicked => { root.pick-files(); } }
     }
 }

@@ -27,16 +27,17 @@ pub struct Entry {
 
 impl Store {
     pub fn new(root: PathBuf) -> Result<Self> {
-        fs::create_dir_all(&root).context("无法创建数据目录，请将 App 移到可写目录")?;
+        fs::create_dir_all(&root)
+            .context("Could not create the data folder; move the app to a writable directory")?;
         if fs::symlink_metadata(&root)?.file_type().is_symlink() {
-            bail!("数据目录不能是符号链接");
+            bail!("The data folder must not be a symlink");
         }
         let root = root.canonicalize()?;
         // Fail at startup instead of accepting uploads into an unwritable directory.
         tempfile::Builder::new()
             .prefix(".lan-drop-")
             .tempfile_in(&root)
-            .context("数据目录不可写，请将 App 移到可写目录")?;
+            .context("The data folder is not writable; move the app to a writable directory")?;
         Ok(Self { root })
     }
 
@@ -97,19 +98,19 @@ impl Store {
                 Err(err) => return Err(err.error.into()),
             }
         }
-        bail!("同名文件过多，请修改名称后重试")
+        bail!("Too many files with this name; rename it and try again")
     }
 
     pub fn import(&self, source: &Path) -> Result<String> {
         let name = source
             .file_name()
-            .context("无效文件名")?
+            .context("Invalid file name")?
             .to_str()
-            .context("文件名必须是 UTF-8")?;
+            .context("File names must be valid UTF-8")?;
         validate_name(name)?;
         let mut input = fs::File::open(source)?;
         if !input.metadata()?.is_file() {
-            bail!("请选择文件，文件夹请先压缩");
+            bail!("Please choose a file; compress folders first");
         }
         let mut temp = self.temporary()?;
         let size = std::io::copy(
@@ -117,7 +118,7 @@ impl Store {
             &mut temp,
         )?;
         if size > MAX_UPLOAD_BYTES {
-            bail!("单个文件不能超过 10 GiB");
+            bail!("A single file cannot exceed 10 GiB");
         }
         temp.as_file().sync_all()?;
         self.commit(temp, name)
@@ -125,10 +126,10 @@ impl Store {
 
     pub fn save_text(&self, text: &str) -> Result<String> {
         if text.trim().is_empty() {
-            bail!("请输入文字内容");
+            bail!("Please enter some text");
         }
         if text.len() > MAX_TEXT_BYTES {
-            bail!("文字不能超过 1 MiB");
+            bail!("Text cannot exceed 1 MiB");
         }
         let name = text_file_name(text);
         let mut temp = self.temporary()?;
@@ -141,7 +142,7 @@ impl Store {
         validate_name(name)?;
         let path = self.root.join(name);
         if !fs::symlink_metadata(&path)?.is_file() {
-            bail!("不是普通文件");
+            bail!("Not a regular file");
         }
         let mut options = fs::OpenOptions::new();
         options.read(true);
@@ -158,13 +159,13 @@ impl Store {
         let file = options.open(path)?;
         let meta = file.metadata()?;
         if !meta.is_file() {
-            bail!("不是普通文件");
+            bail!("Not a regular file");
         }
         #[cfg(windows)]
         {
             use std::os::windows::fs::MetadataExt;
             if meta.file_attributes() & 0x400 != 0 {
-                bail!("不允许访问重解析点");
+                bail!("Reparse points are not allowed");
             }
         }
         Ok(file)
@@ -173,13 +174,13 @@ impl Store {
     pub fn read_text(&self, name: &str) -> Result<String> {
         let file = self.open(name)?;
         if file.metadata()?.len() > MAX_TEXT_BYTES as u64 {
-            bail!("文字超过 1 MiB，请下载查看");
+            bail!("This text is over 1 MiB; download it to read");
         }
         let mut text = String::new();
         file.take((MAX_TEXT_BYTES + 1) as u64)
             .read_to_string(&mut text)?;
         if text.len() > MAX_TEXT_BYTES {
-            bail!("文字超过 1 MiB，请下载查看");
+            bail!("This text is over 1 MiB; download it to read");
         }
         Ok(text)
     }
@@ -211,7 +212,7 @@ fn text_file_name(text: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis();
-    format!("文字-{stamp}.txt")
+    format!("text-{stamp}.txt")
 }
 
 pub fn validate_name(name: &str) -> Result<()> {
@@ -223,7 +224,7 @@ pub fn validate_name(name: &str) -> Result<()> {
             .chars()
             .any(|c| c.is_control() || "/\\:*?\"<>|".contains(c))
     {
-        bail!("无效文件名：不支持隐藏文件、路径或特殊字符");
+        bail!("Invalid file name: hidden files, paths and special characters are not supported");
     }
     let base = name.split('.').next().unwrap_or("").to_ascii_uppercase();
     if ["CON", "PRN", "AUX", "NUL"].contains(&base.as_str())
@@ -231,7 +232,7 @@ pub fn validate_name(name: &str) -> Result<()> {
             && (base.starts_with("COM") || base.starts_with("LPT"))
             && matches!(base.as_bytes()[3], b'1'..=b'9'))
     {
-        bail!("文件名是 Windows 保留名称");
+        bail!("This name is reserved on Windows");
     }
     Ok(())
 }
@@ -300,23 +301,31 @@ mod tests {
     fn text_is_named_after_its_first_characters() {
         let dir = tempfile::tempdir().unwrap();
         let store = Store::new(dir.path().to_owned()).unwrap();
-        assert_eq!(store.save_text("会议纪要").unwrap(), "会议纪要.txt");
+        assert_eq!(
+            store.save_text("Meeting notes").unwrap(),
+            "Meeting notes.txt"
+        );
         // 同样的开头不会互相覆盖。
-        assert_eq!(store.save_text("会议纪要").unwrap(), "会议纪要 (1).txt");
+        assert_eq!(
+            store.save_text("Meeting notes").unwrap(),
+            "Meeting notes (1).txt"
+        );
+        // 文件名跟着内容走，可以是任何语言。
+        assert_eq!(store.save_text("会议纪要").unwrap(), "会议纪要.txt");
         // 超过 28 个字符只留开头，换行与非法字符换成空格。
         assert_eq!(
             store
-                .save_text("  第一行\nhttps://example.com/a/b 后面还有很多内容")
+                .save_text("  First line\nhttps://example.com/a/b and a lot more")
                 .unwrap(),
-            "第一行 https   example.com a b.txt"
+            "First line https   example.c.txt"
         );
         // 开头没有可用字符时退回时间戳。
         let fallback = store.save_text("...\n").unwrap();
         assert!(
-            fallback.starts_with("文字-") && fallback.ends_with(".txt"),
+            fallback.starts_with("text-") && fallback.ends_with(".txt"),
             "{fallback}"
         );
-        assert!(store.save_text("CON").unwrap().starts_with("文字-"));
+        assert!(store.save_text("CON").unwrap().starts_with("text-"));
         for entry in store.list().unwrap() {
             assert!(validate_name(&entry.name).is_ok(), "{}", entry.name);
         }

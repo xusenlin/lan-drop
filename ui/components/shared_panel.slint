@@ -27,16 +27,19 @@ export component SharedPanel inherits Rectangle {
             }
             VerticalLayout {
                 spacing: 5px; alignment: center;
-                Text { text: "共享空间"; font-size: Theme.font-heading; font-weight: 700; color: Theme.heading; }
-                Text { text: root.file-count + " 个文件 · " + root.total-size; color: Theme.muted; font-size: Theme.font-micro; }
+                Text { text: "Shared space"; font-size: Theme.font-heading; font-weight: 700; color: Theme.heading; }
+                Text {
+                    text: root.file-count + (root.file-count == 1 ? " file · " : " files · ") + root.total-size;
+                    color: Theme.muted; font-size: Theme.font-micro;
+                }
             }
-            Action { width: 72px; height: 32px; label: "刷新"; icon: @image-url("../icons/refresh.svg"); quiet: true; clicked => { root.refresh(); } }
+            Action { width: 100px; height: 32px; label: "Refresh"; icon: @image-url("../icons/refresh.svg"); quiet: true; clicked => { root.refresh(); } }
         }
         Rectangle { height: 1px; background: Theme.border; }
         HorizontalLayout {
             height: 16px;
-            Text { text: "名称 / 修改时间"; color: Theme.muted; font-size: Theme.font-micro; }
-            Text { text: "每 2 秒自动同步"; horizontal-alignment: right; color: Theme.muted; font-size: Theme.font-micro; }
+            Text { text: "Name / modified"; color: Theme.muted; font-size: Theme.font-micro; }
+            Text { text: "Syncs every 2 seconds"; horizontal-alignment: right; color: Theme.muted; font-size: Theme.font-micro; }
         }
         if root.file-count == 0: EmptyState { }
         if root.file-count > 0: ScrollView {
@@ -53,8 +56,8 @@ export component SharedPanel inherits Rectangle {
         Rectangle { height: 1px; background: Theme.border; }
         HorizontalLayout {
             height: 34px; spacing: 10px;
-            Text { text: "文件保存在本机"; color: Theme.muted; font-size: Theme.font-micro; vertical-alignment: center; }
-            Action { width: 144px; height: 34px; label: "打开数据文件夹"; icon: @image-url("../icons/folder.svg"); quiet: true; clicked => { root.open-folder(); } }
+            Text { text: "Files are stored on this computer"; color: Theme.muted; font-size: Theme.font-micro; vertical-alignment: center; }
+            Action { width: 168px; height: 34px; label: "Open data folder"; icon: @image-url("../icons/folder.svg"); quiet: true; clicked => { root.open-folder(); } }
         }
     }
 }

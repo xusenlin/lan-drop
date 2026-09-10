@@ -32,7 +32,7 @@ fn main() {
         eprintln!("LAN Drop: {error:#}");
         if !std::env::args().any(|a| a == "--headless") {
             rfd::MessageDialog::new()
-                .set_title("LAN Drop 启动失败")
+                .set_title("LAN Drop failed to start")
                 .set_description(format!("{error:#}"))
                 .set_level(rfd::MessageLevel::Error)
                 .show();
@@ -51,17 +51,17 @@ fn run() -> Result<()> {
             "--port" => {
                 port = args
                     .next()
-                    .context("--port 后需要端口号")?
+                    .context("--port needs a port number")?
                     .parse()
-                    .context("端口必须是 0–65535")?
+                    .context("the port must be between 0 and 65535")?
             }
             "--help" | "-h" => {
                 println!(
-                    "LAN Drop\n  --port <port>  默认 8765；占用时尝试后续 20 个端口；0 为随机端口\n  --headless     仅运行 HTTP 服务\n数据保存在可执行文件旁的 LanDropData 目录；macOS 的 .app 保存在 .app 旁边，\n装进 Applications 后改用个人目录下的 LanDropData。启动时窗口底部会显示实际路径。"
+                    "LAN Drop\n  --port <port>  defaults to 8765; tries the next 20 ports if taken; 0 picks a free one\n  --headless     run only the HTTP server\nData is kept in a LanDropData folder next to the executable; for a macOS .app it\nsits next to the .app, or in your home folder once the app is installed into\nApplications. The window footer always shows the path in use."
                 );
                 return Ok(());
             }
-            _ => anyhow::bail!("未知参数：{arg}"),
+            _ => anyhow::bail!("unknown argument: {arg}"),
         }
     }
     let store = Store::new(data_dir()?)?;
@@ -73,8 +73,8 @@ fn run() -> Result<()> {
         .cloned()
         .unwrap_or_else(|| format!("http://127.0.0.1:{port}"));
     println!(
-        "LAN Drop 正在运行\n地址：{}\n数据目录：{}",
-        urls.join("\n地址："),
+        "LAN Drop is running\nAddress: {}\nData folder: {}",
+        urls.join("\nAddress: "),
         store.root().display()
     );
     let runtime = tokio::runtime::Runtime::new()?;
@@ -91,7 +91,9 @@ fn run() -> Result<()> {
                 .with_graceful_shutdown(cancel.cancelled_owned())
                 .await;
             if let Err(error) = &result {
-                let _ = server_tx.send(Update::ServerStopped(format!("HTTP 服务停止：{error}")));
+                let _ = server_tx.send(Update::ServerStopped(format!(
+                    "HTTP server stopped: {error}"
+                )));
             }
             result
         })
@@ -116,7 +118,7 @@ fn run() -> Result<()> {
     ui.set_server_url(url.clone().into());
     ui.set_all_urls(urls.join("  ·  ").into());
     ui.set_data_path(store.root().display().to_string().into());
-    ui.set_status("已就绪 · 同一局域网内的设备可访问上方地址".into());
+    ui.set_status("Ready · devices on this network can open the address above".into());
     let clipboard = Rc::new(RefCell::new(arboard::Clipboard::new().ok()));
 
     let weak = ui.as_weak();
@@ -126,13 +128,13 @@ fn run() -> Result<()> {
             let result = clip
                 .borrow_mut()
                 .as_mut()
-                .context("剪贴板不可用")
+                .context("Clipboard unavailable")
                 .and_then(|c| {
                     c.set_text(ui.get_server_url().to_string())
                         .map_err(Into::into)
                 });
             ui.set_status(match result {
-                Ok(_) => "地址已复制".into(),
+                Ok(_) => "Address copied".into(),
                 Err(e) => e.to_string().into(),
             });
         }
@@ -152,11 +154,11 @@ fn run() -> Result<()> {
             match clip
                 .borrow_mut()
                 .as_mut()
-                .context("剪贴板不可用")
+                .context("Clipboard unavailable")
                 .and_then(|c| c.get_text().map_err(Into::into))
             {
                 Ok(text) => ui.set_draft(format!("{}{text}", ui.get_draft()).into()),
-                Err(e) => ui.set_status(format!("无法粘贴文字：{e}").into()),
+                Err(e) => ui.set_status(format!("Could not paste text: {e}").into()),
             }
         }
     });
@@ -169,7 +171,7 @@ fn run() -> Result<()> {
         let tx = text_tx.clone();
         if let Some(ui) = weak.upgrade() {
             ui.set_saving(true);
-            ui.set_status("正在保存文字…".into());
+            ui.set_status("Saving text…".into());
         }
         handle.spawn_blocking(move || {
             match store.save_text(&text) {
@@ -193,7 +195,7 @@ fn run() -> Result<()> {
         let tx = pick_tx.clone();
         handle.spawn(async move {
             if let Some(files) = rfd::AsyncFileDialog::new()
-                .set_title("选择要共享的文件")
+                .set_title("Choose files to share")
                 .pick_files()
                 .await
             {
@@ -234,7 +236,7 @@ fn run() -> Result<()> {
         if open_store.open(&name).is_ok() {
             report_open(open_store.root().join(name.as_str()), &callback_tx);
         } else {
-            let _ = callback_tx.send(Update::Status("文件不存在或不可访问".into()));
+            let _ = callback_tx.send(Update::Status("File not found or not accessible".into()));
         }
     });
     let copy_store = store.clone();
@@ -244,13 +246,13 @@ fn run() -> Result<()> {
             clipboard
                 .borrow_mut()
                 .as_mut()
-                .context("剪贴板不可用")?
+                .context("Clipboard unavailable")?
                 .set_text(text)?;
             Ok(())
         });
         if let Some(ui) = weak.upgrade() {
             ui.set_status(match result {
-                Ok(_) => "文字已复制".into(),
+                Ok(_) => "Text copied".into(),
                 Err(e) => e.to_string().into(),
             });
         }
@@ -266,7 +268,7 @@ fn run() -> Result<()> {
                 let _ = tx.send(Update::Files(files));
             }
             Err(e) => {
-                let _ = tx.send(Update::Status(format!("刷新失败：{e}")));
+                let _ = tx.send(Update::Status(format!("Refresh failed: {e}")));
             }
         });
     });
@@ -285,7 +287,9 @@ fn run() -> Result<()> {
                     }
                 }
                 Ok(Err(e)) => {
-                    let _ = tx.send(Update::Status(format!("读取目录失败：{e}")));
+                    let _ = tx.send(Update::Status(format!(
+                        "Could not read the data folder: {e}"
+                    )));
                 }
                 _ => {}
             }
@@ -308,10 +312,10 @@ fn run() -> Result<()> {
                     Update::TextSaved(name) => {
                         ui.set_saving(false);
                         if let Some(error) = name.strip_prefix("ERROR:") {
-                            ui.set_status(format!("保存失败：{error}").into());
+                            ui.set_status(format!("Save failed: {error}").into());
                         } else {
                             ui.set_draft("".into());
-                            ui.set_status(format!("已保存 {name}").into());
+                            ui.set_status(format!("Saved {name}").into());
                         }
                     }
                     Update::Files(files) => {
@@ -350,8 +354,9 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-/// 界面字体。软件渲染器只会用选中的那一个字型渲染整段文字，没有逐字回退，
-/// 所以这里必须点名一个自带汉字的系统字体，否则中文会变成豆腐块。
+/// 界面字体。界面文案本身是英文，但共享的文件名可能是任何语言，而软件渲染器
+/// 只会用选中的那一个字型渲染整段文字，没有逐字回退——所以这里仍然点名一个
+/// 自带汉字的系统字体（它们的拉丁字形也够用），否则中文文件名会变成豆腐块。
 /// Linux 的中文字体名各发行版不一，返回空串让 fontconfig 决定 sans-serif；
 /// 结果不合适时可用 Slint 的 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
 fn ui_font_family() -> &'static str {
@@ -378,32 +383,40 @@ fn symbol_font_family() -> &'static str {
 
 fn report_open(path: impl AsRef<std::ffi::OsStr>, tx: &mpsc::Sender<Update>) {
     if let Err(e) = open::that_detached(path) {
-        let _ = tx.send(Update::Status(format!("无法打开：{e}")));
+        let _ = tx.send(Update::Status(format!("Could not open: {e}")));
     }
 }
 fn import_files(store: Store, paths: Vec<PathBuf>, tx: mpsc::Sender<Update>) {
-    let _ = tx.send(Update::Status(format!("正在导入 {} 个文件…", paths.len())));
+    let _ = tx.send(Update::Status(format!(
+        "Importing {}…",
+        plural_files(paths.len())
+    )));
     let mut success = 0;
     let mut errors = Vec::new();
     for path in paths {
         match store.import(&path) {
             Ok(_) => success += 1,
             Err(e) => errors.push(format!(
-                "{}：{e}",
+                "{}: {e}",
                 path.file_name().unwrap_or_default().to_string_lossy()
             )),
         }
     }
+    let shared = format!("Shared {}", plural_files(success));
     let message = if errors.is_empty() {
-        format!("已共享 {success} 个文件")
+        shared
     } else {
-        format!("已共享 {success} 个文件；{}", errors.join("；"))
+        format!("{shared}; {}", errors.join("; "))
     };
     let _ = tx.send(Update::Status(message));
     if let Ok(files) = store.list() {
         let _ = tx.send(Update::Files(files));
     }
 }
+fn plural_files(count: usize) -> String {
+    format!("{count} file{}", if count == 1 { "" } else { "s" })
+}
+
 /// 界面、窗口图标和网页共用同一张图；母图 assets/app-icon.png 只在打包时用。
 pub const ICON_PNG: &[u8] = include_bytes!("../assets/app-icon-256.png");
 
@@ -425,7 +438,9 @@ const DATA_DIR_NAME: &str = "LanDropData";
 /// 而且对非管理员账号不可写。这种情况改用个人目录下的同名文件夹。
 fn data_dir() -> Result<PathBuf> {
     let executable = std::env::current_exe()?;
-    let beside = executable.parent().context("无法定位 App 目录")?;
+    let beside = executable
+        .parent()
+        .context("Could not locate the app directory")?;
     let base = strip_bundle(beside).unwrap_or_else(|| beside.to_path_buf());
     if is_applications_dir(&base) {
         if let Some(home) = std::env::home_dir() {
@@ -461,11 +476,11 @@ fn is_applications_dir(dir: &Path) -> bool {
         || std::env::home_dir().is_some_and(|home| dir == home.join("Applications"))
 }
 
-/// Unix 秒转本地时间，格式和网页端的
-/// `toLocaleString('zh-CN', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})` 对齐。
+/// Unix 秒转本地时间，格式和网页端的 `toLocaleString('en-US', {month:'short',
+/// day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false})` 对齐。
 fn local_time(secs: u64) -> String {
     DateTime::<Local>::from(UNIX_EPOCH + Duration::from_secs(secs))
-        .format("%-m月%-d日 %H:%M")
+        .format("%b %-d, %H:%M")
         .to_string()
 }
 
@@ -491,10 +506,12 @@ fn bind_listener(port: u16) -> Result<std::net::TcpListener> {
                 return Ok(listener);
             }
             Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => continue,
-            Err(e) => return Err(e).context("无法启动 HTTP 服务"),
+            Err(e) => return Err(e).context("Could not start the HTTP server"),
         }
     }
-    anyhow::bail!("端口 {port} 及后续端口均被占用，请使用 --port 指定端口")
+    anyhow::bail!(
+        "port {port} and the 20 ports after it are all in use; pass --port to pick another"
+    )
 }
 fn lan_urls(port: u16) -> Vec<String> {
     let mut ips: Vec<Ipv4Addr> = if_addrs::get_if_addrs()

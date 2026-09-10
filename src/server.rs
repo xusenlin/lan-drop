@@ -28,7 +28,7 @@ impl From<std::io::Error> for ApiError {
     fn from(err: std::io::Error) -> Self {
         Self(
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("文件操作失败：{err}"),
+            format!("File operation failed: {err}"),
         )
     }
 }
@@ -68,7 +68,7 @@ async fn protect_browser_requests(request: Request, next: Next) -> Response {
     {
         return ApiError(
             StatusCode::FORBIDDEN,
-            "请直接打开 App 显示的局域网地址".into(),
+            "Open the LAN address shown in the app".into(),
         )
         .into_response();
     }
@@ -84,7 +84,8 @@ async fn protect_browser_requests(request: Request, next: Next) -> Response {
         if !origin_valid || headers.get("x-lan-drop").is_none_or(|v| v != "1") {
             return ApiError(
                 StatusCode::FORBIDDEN,
-                "上传请求来源无效，请刷新页面后重试".into(),
+                "Upload request came from an unexpected origin; reload the page and try again"
+                    .into(),
             )
             .into_response();
         }
@@ -129,7 +130,7 @@ async fn upload(
     {
         let name = field
             .file_name()
-            .ok_or_else(|| anyhow::anyhow!("请选择文件"))?
+            .ok_or_else(|| anyhow::anyhow!("Please choose a file"))?
             .to_owned();
         validate_name(&name)?;
         let temp = store.temporary()?;
@@ -144,7 +145,7 @@ async fn upload(
             if size > MAX_UPLOAD_BYTES {
                 return Err(ApiError(
                     StatusCode::PAYLOAD_TOO_LARGE,
-                    "单个文件不能超过 10 GiB".into(),
+                    "A single file cannot exceed 10 GiB".into(),
                 ));
             }
             output.write_all(&chunk).await?;
@@ -159,7 +160,7 @@ async fn upload(
         names.push(saved);
     }
     if names.is_empty() {
-        return Err(anyhow::anyhow!("请选择至少一个文件").into());
+        return Err(anyhow::anyhow!("Please choose at least one file").into());
     }
     Ok(Json(serde_json::json!({"names": names})))
 }
@@ -191,7 +192,12 @@ async fn download(State(store): State<Store>, Path(name): Path<String>) -> ApiRe
     let file = tokio::task::spawn_blocking(move || store.open(&requested_name))
         .await
         .map_err(|e| anyhow::anyhow!(e))?
-        .map_err(|_| ApiError(StatusCode::NOT_FOUND, "文件不存在或不可访问".into()))?;
+        .map_err(|_| {
+            ApiError(
+                StatusCode::NOT_FOUND,
+                "File not found or not accessible".into(),
+            )
+        })?;
     let size = file.metadata()?.len();
     let encoded = percent_encoding::utf8_percent_encode(&name, percent_encoding::NON_ALPHANUMERIC);
     let mut response =

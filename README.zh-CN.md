@@ -30,11 +30,11 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 桌面端：拖入文件或粘贴文字，顶部显示局域网访问地址。
 
-![LAN Drop 桌面端窗口](assets/screenshots/desktop.png)
+![LAN Drop 桌面端窗口](screenshots/desktop.png)
 
 网页端：同一局域网的任意设备打开地址即可，支持搜索、筛选、预览与下载。
 
-![LAN Drop 网页端界面](assets/screenshots/web.png)
+![LAN Drop 网页端界面](screenshots/web.png)
 
 ## 使用
 
@@ -48,10 +48,12 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全一样，而裸二进制在 Finder 里双击会经由 Terminal 启动，多一个终端窗口，也没有图标和 Dock 名称。需要命令行时直接调用 `LAN Drop.app/Contents/MacOS/lan-drop --headless`。
 
-桌面端显示实际访问地址，例如 `http://192.168.1.10:8765`。点击地址或“打开网页”可直接访问，“复制地址”方便发送给其他设备。
+界面是英文的，下面用到的按钮名保持与界面一致。
 
-- 将文件拖进桌面窗口或网页，也可以点击“选择文件”，支持多文件选择。
-- 在文字框粘贴内容，点击“保存并共享”，以 UTF-8 `.txt` 文件保存。文件名取内容开头的 28 个字符，换行和文件名不允许的字符换成空格；开头没有可用字符时用 `文字-<时间戳>.txt`。
+桌面端显示实际访问地址，例如 `http://192.168.1.10:8765`。点击地址或 Open page 可直接访问，Copy address 方便发送给其他设备。
+
+- 将文件拖进桌面窗口或网页，也可以点击 Choose files，支持多文件选择。
+- 在文字框粘贴内容，点击 Save and share，以 UTF-8 `.txt` 文件保存。文件名取内容开头的 28 个字符，换行和文件名不允许的字符换成空格；开头没有可用字符时用 `text-<时间戳>.txt`。
 - 文件和文字全部保存在 **`LanDropData/`**，与终端当前工作目录无关；首次启动自动创建。位置规则：
 
   | 情况 | 数据目录 |
@@ -76,7 +78,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 
 `--headless` 只启动 HTTP 服务，适合无桌面 Linux；`--port 0` 自动分配空闲端口，地址写入标准输出。默认桌面启动在 Windows 不显示控制台。
 
-局域网 HTTP 页面受浏览器剪贴板权限限制：如“粘贴”按钮不能读取剪贴板，直接在输入框按 `Ctrl+V` / `⌘+V` 或手机长按粘贴即可。文字复制提供手动选择的回退。
+局域网 HTTP 页面受浏览器剪贴板权限限制：如 Paste 按钮不能读取剪贴板，直接在输入框按 `Ctrl+V` / `⌘+V` 或手机长按粘贴即可。文字复制提供手动选择的回退。
 
 ## 构建
 
@@ -93,7 +95,7 @@ task check          # rustfmt + clippy
 
 `task build` 需要在 macOS 主机执行；Linux/Windows 开发机可使用 `task build:native`。默认三平台 macOS 产物是 arm64。跨平台工具链定义在 `scripts/Dockerfile.cross`，镜像名为 `lan-drop-cross:rust-1.88-v1`；Cargo registry 与编译产物存储在项目专用 Docker volumes 中。`Cargo.lock` 固定依赖，构建使用 `--locked`。
 
-**运行时无需 Rust、Python、Docker、Node.js、Qt、WebView、独立 HTML 或资源文件。** Slint 界面提前编译，网页通过 `include_str!` 嵌入程序，使用软件渲染。系统自带的动态库和桌面服务仍然必要：macOS 系统框架、Windows 系统 DLL；Linux 为 glibc 桌面系统（交叉构建基于 Debian 12，glibc 2.36+），需要 X11 或 XWayland，文件选择器使用系统桌面 Portal。纯 Wayland 且没有 XWayland 的桌面不在当前支持范围内，可使用 `--headless`。界面使用系统中文字体：macOS 用苹方，Windows 用微软雅黑，Linux 交给 fontconfig 的 sans-serif，因此 Linux 需要自行安装中文字体（如 Noto Sans CJK SC）；软件渲染器不做逐字回退，选中的字体缺汉字时会显示为方块，可用 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
+**运行时无需 Rust、Python、Docker、Node.js、Qt、WebView、独立 HTML 或资源文件。** Slint 界面提前编译，网页通过 `include_str!` 嵌入程序，使用软件渲染。系统自带的动态库和桌面服务仍然必要：macOS 系统框架、Windows 系统 DLL；Linux 为 glibc 桌面系统（交叉构建基于 Debian 12，glibc 2.36+），需要 X11 或 XWayland，文件选择器使用系统桌面 Portal。纯 Wayland 且没有 XWayland 的桌面不在当前支持范围内，可使用 `--headless`。界面文案是英文，但共享的文件名可能是任何语言，而软件渲染器整段文字只用一个字型、不做逐字回退，所以仍然点名一个带汉字的系统字体：macOS 用苹方，Windows 用微软雅黑，Linux 交给 fontconfig 的 sans-serif，因此 Linux 需要自行安装中文字体（如 Noto Sans CJK SC）。选中的字体缺汉字时会显示为方块，可用 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
 
 ## 网络与数据
 
@@ -116,6 +118,7 @@ web/index.html       内嵌响应式网页，无 CDN 或构建依赖
 assets/app-icon.png  1024×1024 图标母图，唯一来源（圆角已烤进 alpha 通道）
 assets/app-icon-256.png  由母图派生，嵌进程序供界面、窗口图标和网页使用
 assets/app-icon.ico  由母图派生，Windows 可执行文件的资源图标
+screenshots/         README 截图，界面是英文，两份 README 共用；不编进二进制
 scripts/build.py     三平台构建、图标派生、macOS .app 打包与校验和
 scripts/Dockerfile.cross  Windows/Linux 交叉编译环境
 Taskfile.yml         开发与构建命令

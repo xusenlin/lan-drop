@@ -20,12 +20,12 @@ export component BrandHeader inherits HorizontalLayout {
     VerticalLayout {
         spacing: 3px;
         Text { text: "LAN Drop"; font-size: Theme.font-title; font-weight: 700; color: Theme.brand-title; }
-        Text { text: "就在身边，轻松共享。"; font-size: Theme.font-tiny; color: Theme.brand-sub; }
+        Text { text: "Right here. Effortless sharing."; font-size: Theme.font-tiny; color: Theme.brand-sub; }
     }
     Rectangle {
-        width: 118px; height: 32px; border-radius: 16px;
+        width: 128px; height: 32px; border-radius: 16px;
         background: root.online ? Theme.online-bg : Theme.offline-bg;
-        // 圆点用图形画，不用 ● —— 它和中文混在一行，没法单独换字体。
+        // 圆点用图形画，不用 ● —— 它和正文混在一行，没法单独换字体。
         HorizontalLayout {
             alignment: center; spacing: 7px;
             VerticalLayout {
@@ -36,7 +36,7 @@ export component BrandHeader inherits HorizontalLayout {
                 }
             }
             Text {
-                text: root.online ? "服务已启动" : "服务已停止";
+                text: root.online ? "Server running" : "Server stopped";
                 color: root.online ? Theme.online-text : Theme.offline-text;
                 font-size: Theme.font-tiny; vertical-alignment: center;
             }

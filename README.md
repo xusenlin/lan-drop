@@ -30,11 +30,11 @@ Drop it anywhere and run it; delete it and nothing is left behind. It writes no 
 
 Desktop: drop in files or paste text; the LAN address is shown at the top.
 
-![LAN Drop desktop window](assets/screenshots/desktop.png)
+![LAN Drop desktop window](screenshots/desktop.png)
 
 Web: open the address from any device on the same network — search, filter, preview and download.
 
-![LAN Drop web interface](assets/screenshots/web.png)
+![LAN Drop web interface](screenshots/web.png)
 
 ## Usage
 
@@ -48,12 +48,10 @@ Put the binary for your platform in a **writable directory** and start it:
 
 macOS ships only the `.app`, with no separate bare binary — the contents are identical, but double-clicking a bare binary in Finder launches it through Terminal, which adds a stray terminal window and gives it no icon or Dock name. For command line use, call `LAN Drop.app/Contents/MacOS/lan-drop --headless` directly.
 
-The interface is currently Chinese-only, so the button labels below are quoted as they appear on screen.
+The desktop window shows the real address, for example `http://192.168.1.10:8765`. Click the address or "Open page" to open it; "Copy address" copies it so you can send it to another device.
 
-The desktop window shows the real address, for example `http://192.168.1.10:8765`. Click the address or 打开网页 (open page) to open it; 复制地址 (copy address) copies it so you can send it to another device.
-
-- Drag files onto the desktop window or the web page, or click 选择文件 (choose files); multiple files are supported.
-- Paste into the text box and click 保存并共享 (save and share) to store it as a UTF-8 `.txt` file. The file name is taken from the first 28 characters of the content, with newlines and characters that are illegal in file names replaced by spaces; if there is nothing usable at the start, `文字-<timestamp>.txt` is used instead.
+- Drag files onto the desktop window or the web page, or click "Choose files"; multiple files are supported.
+- Paste into the text box and click "Save and share" to store it as a UTF-8 `.txt` file. The file name is taken from the first 28 characters of the content, with newlines and characters that are illegal in file names replaced by spaces; if there is nothing usable at the start, `text-<timestamp>.txt` is used instead.
 - Files and text all live in **`LanDropData/`**, regardless of the shell's working directory; it is created on first launch. Where it goes:
 
   | Case | Data directory |
@@ -96,7 +94,7 @@ task check          # rustfmt + clippy
 
 `task build` has to run on a macOS host; on a Linux or Windows machine use `task build:native`. The macOS artifact from a full three-platform build is arm64. The cross toolchain is defined in `scripts/Dockerfile.cross` as image `lan-drop-cross:rust-1.88-v1`; the Cargo registry and build artifacts live in Docker volumes dedicated to this project. `Cargo.lock` pins dependencies and builds pass `--locked`.
 
-**At runtime it needs no Rust, Python, Docker, Node.js, Qt, WebView, or loose HTML and asset files.** The Slint UI is compiled ahead of time, the web page is embedded with `include_str!`, and rendering is done in software. Dynamic libraries and desktop services that ship with the OS are still required: system frameworks on macOS, system DLLs on Windows; on Linux a glibc desktop (the cross build targets Debian 12, glibc 2.36+) with X11 or XWayland, and the file picker uses the desktop portal. A pure Wayland desktop with no XWayland is out of scope for now — use `--headless` there. The UI uses the system CJK font: PingFang on macOS, Microsoft YaHei on Windows, and fontconfig's sans-serif on Linux, so a CJK font such as Noto Sans CJK SC has to be installed there. The software renderer does no per-glyph fallback, so a font missing Chinese characters renders them as boxes; `SLINT_DEFAULT_FONT` can point at a specific font file or directory.
+**At runtime it needs no Rust, Python, Docker, Node.js, Qt, WebView, or loose HTML and asset files.** The Slint UI is compiled ahead of time, the web page is embedded with `include_str!`, and rendering is done in software. Dynamic libraries and desktop services that ship with the OS are still required: system frameworks on macOS, system DLLs on Windows; on Linux a glibc desktop (the cross build targets Debian 12, glibc 2.36+) with X11 or XWayland, and the file picker uses the desktop portal. A pure Wayland desktop with no XWayland is out of scope for now — use `--headless` there. The interface text is English, but shared file names can be in any language, and the software renderer draws a whole string with one font — there is no per-glyph fallback. So the app picks a system font with CJK coverage: PingFang on macOS, Microsoft YaHei on Windows, and fontconfig's sans-serif on Linux, where a font such as Noto Sans CJK SC has to be installed. A font missing those characters renders them as boxes; `SLINT_DEFAULT_FONT` can point at a specific font file or directory.
 
 ## Network and data
 
@@ -119,6 +117,7 @@ web/index.html       embedded responsive web page, no CDN or build step
 assets/app-icon.png  1024x1024 master icon, the single source (rounded corners baked into alpha)
 assets/app-icon-256.png  derived from the master, embedded for the UI, window icon and web page
 assets/app-icon.ico  derived from the master, the Windows executable resource icon
+screenshots/         README screenshots, shared by both READMEs; not shipped in the binary
 scripts/build.py     three-platform build, icon derivation, macOS .app packaging and checksums
 scripts/Dockerfile.cross  Windows/Linux cross-compilation environment
 Taskfile.yml         development and build commands

@@ -21,7 +21,7 @@ export component AddressCard inherits Rectangle {
             HorizontalLayout {
                 height: 16px; alignment: start; spacing: 7px;
                 Icon { source: @image-url("../icons/wifi.svg"); width: 16px; height: 16px; ink: #a9cdbb; }
-                Text { text: "局域网访问地址"; color: #b9d5c6; font-size: Theme.font-micro; font-weight: 600; }
+                Text { text: "LOCAL NETWORK ADDRESS"; color: #b9d5c6; font-size: Theme.font-micro; font-weight: 600; letter-spacing: 1px; }
             }
             Text {
                 height: 34px;
@@ -30,16 +30,16 @@ export component AddressCard inherits Rectangle {
                 vertical-alignment: center; horizontal-alignment: left;
                 TouchArea { mouse-cursor: pointer; clicked => { root.open-browser(); } }
             }
-            Text { text: "同一网络，打开浏览器即可分享。"; color: #b9d5c6; font-size: Theme.font-tiny; }
+            Text { text: "Same network, just open a browser."; color: #b9d5c6; font-size: Theme.font-tiny; }
         }
         if root.show-art: Image {
             source: @image-url("../icons/devices.svg");
             width: 166px; image-fit: contain;
         }
         VerticalLayout {
-            width: 126px; alignment: center; spacing: root.compact ? 6px : 10px;
-            Action { label: "打开网页"; icon: @image-url("../icons/external.svg"); on-dark: true; clicked => { root.open-browser(); } }
-            Action { label: "复制地址"; icon: @image-url("../icons/copy.svg"); clicked => { root.copy-address(); } }
+            width: 148px; alignment: center; spacing: root.compact ? 6px : 10px;
+            Action { label: "Open page"; icon: @image-url("../icons/external.svg"); on-dark: true; clicked => { root.open-browser(); } }
+            Action { label: "Copy address"; icon: @image-url("../icons/copy.svg"); clicked => { root.copy-address(); } }
         }
     }
 }
