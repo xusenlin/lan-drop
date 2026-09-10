@@ -1,52 +1,71 @@
 import { Theme } from "../theme.slint";
 import { Icon } from "icon.slint";
 
-// 窗口底部：当前状态、其他网卡地址、数据目录，右下角是项目仓库地址。
-export component StatusBar inherits VerticalLayout {
+// 窗口底部：左边是当前状态和数据目录，右边是其他网卡地址和项目仓库地址。
+// 两列各两行、左右各自对齐，视觉上对称。
+export component StatusBar inherits HorizontalLayout {
     in property <string> status;
     in property <string> all-urls;
     in property <string> data-path;
     callback open-github();
 
-    spacing: 6px;
-    height: 43px;
+    spacing: 20px;
+    // 高度交给内容算。之前写死过 43px，内容比这高，多出来的部分溢出到根布局的
+    // padding 里，看起来就贴着窗口底边了。
+    // stretch 归零，否则这个布局会把上面各块的剩余空间都吸走。
+    vertical-stretch: 0;
 
-    Text { text: root.status; color: Theme.status-text; font-size: Theme.font-tiny; overflow: elide; }
-    HorizontalLayout {
+    VerticalLayout {
         spacing: 6px;
-        Icon { source: @image-url("../icons/link.svg"); width: 11px; ink: Theme.footer; }
-        Text { text: "Other addresses: " + root.all-urls; color: Theme.footer; font-size: Theme.font-nano; overflow: elide; }
-    }
-    HorizontalLayout {
-        spacing: 6px;
-        Icon { source: @image-url("../icons/folder.svg"); width: 11px; ink: Theme.footer; }
-        Text {
-            text: root.data-path; color: Theme.footer; font-size: Theme.font-nano;
-            overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
+        horizontal-stretch: 1;
+        Text { text: root.status; color: Theme.status-text; font-size: Theme.font-tiny; overflow: elide; }
+        HorizontalLayout {
+            alignment: start; spacing: 6px;
+            Icon { source: @image-url("../icons/folder.svg"); width: 11px; ink: Theme.footer; }
+            Text {
+                text: root.data-path; color: Theme.footer; font-size: Theme.font-nano;
+                overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
+            }
         }
-        // 点击热区只包住图标和仓库地址。
-        Rectangle {
-            horizontal-stretch: 0;
-            HorizontalLayout {
-                alignment: end; spacing: 5px;
-                VerticalLayout {
-                    alignment: center;
-                    // GitHub 图标只能用位图：软件渲染器的 draw_path 是个空函数，
-                    // Path 元素画不出来（i-slint-core 源码里就是 TODO）。
-                    // 图放在组件旁边：assets/ 是 app 图标专用的，三个文件都由
-                    // scripts/build.py 从 app-icon.png 母图生成。
-                    Image {
-                        source: @image-url("github-mark.png");
-                        image-fit: contain;
-                        width: 12px; height: 12px;
+    }
+
+    VerticalLayout {
+        spacing: 6px;
+        horizontal-stretch: 1;
+        HorizontalLayout {
+            alignment: end; spacing: 6px;
+            Icon { source: @image-url("../icons/link.svg"); width: 11px; ink: Theme.footer; }
+            Text {
+                text: "Other addresses: " + root.all-urls; color: Theme.footer;
+                font-size: Theme.font-nano; overflow: elide; vertical-alignment: center;
+            }
+        }
+        // 点击热区只包住图标和仓库地址，不占满整行。
+        HorizontalLayout {
+            alignment: end;
+            Rectangle {
+                horizontal-stretch: 0;
+                HorizontalLayout {
+                    alignment: end; spacing: 5px;
+                    VerticalLayout {
+                        alignment: center;
+                        // GitHub 图标只能用位图：软件渲染器的 draw_path 是个空函数，
+                        // Path 元素画不出来（i-slint-core 源码里就是 TODO）。
+                        // 图放在组件旁边：assets/ 是 app 图标专用的，三个文件都由
+                        // scripts/build.py 从 app-icon.png 母图生成。
+                        Image {
+                            source: @image-url("github-mark.png");
+                            image-fit: contain;
+                            width: 12px; height: 12px;
+                        }
+                    }
+                    Text {
+                        text: "github.com/xusenlin/lan-drop"; color: Theme.status-text;
+                        font-size: Theme.font-nano; vertical-alignment: center;
                     }
                 }
-                Text {
-                    text: "github.com/xusenlin/lan-drop"; color: Theme.status-text;
-                    font-size: Theme.font-nano; vertical-alignment: center;
-                }
+                TouchArea { mouse-cursor: pointer; clicked => { root.open-github(); } }
             }
-            TouchArea { mouse-cursor: pointer; clicked => { root.open-github(); } }
         }
     }
 }

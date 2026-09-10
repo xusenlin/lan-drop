@@ -1,7 +1,7 @@
-import { TextEdit } from "std-widgets.slint";
 import { Theme } from "../theme.slint";
 import { Action } from "action.slint";
 import { Icon } from "icon.slint";
+import { TextArea } from "text_area.slint";
 
 export component TextCard inherits Rectangle {
     in-out property <string> draft;
@@ -24,14 +24,11 @@ export component TextCard inherits Rectangle {
             Text { text: "Share text"; color: Theme.heading; font-size: 15px; font-weight: 700; vertical-alignment: center; }
             Action { width: 82px; height: 28px; label: "Paste"; icon: @image-url("../icons/clipboard.svg"); quiet: true; enabled: !root.saving; clicked => { root.paste-text(); } }
         }
-        Rectangle {
+        TextArea {
             min-height: root.compact ? 60px : 78px; vertical-stretch: 1;
-            editor := TextEdit { width: parent.width; height: parent.height; text <=> root.draft; enabled: !root.saving; wrap: word-wrap; }
-            if root.draft == "": Text {
-                x: 12px; y: 10px; width: parent.width - 24px;
-                text: "Write something, or paste a link or note…";
-                color: Theme.hint; font-size: Theme.font-tiny;
-            }
+            text <=> root.draft;
+            enabled: !root.saving;
+            placeholder: "Write something, or paste a link or note…";
         }
         Text { text: "Saved as a .txt file · up to 1 MiB"; color: Theme.muted; font-size: Theme.font-micro; }
         Action {

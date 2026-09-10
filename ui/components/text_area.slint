@@ -1,0 +1,62 @@
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+
+// 多行输入框。没有用 std-widgets 的 TextEdit：fluent 样式聚焦时会在底部画一条
+// 蓝色下划线，样式不开放定制。这里用原生 TextInput 自己搭，聚焦时整圈边框变绿
+// 并加一层外环——软件渲染器画不了 drop-shadow，外环是它的替代。
+export component TextArea inherits Rectangle {
+    in-out property <string> text;
+    in property <bool> enabled: true;
+    in property <string> placeholder;
+    private property <bool> focused: input.has-focus && root.enabled;
+    private property <length> ring: 3px;
+
+    forward-focus: input;
+    border-radius: 12px;
+    background: transparent;
+    // 外环始终占位，聚焦时才上色，这样布局不会跳。
+    border-width: root.ring;
+    border-color: root.focused ? Theme.focus-ring : transparent;
+
+    Rectangle {
+        x: root.ring; y: root.ring;
+        width: parent.width - 2 * root.ring;
+        height: parent.height - 2 * root.ring;
+        border-radius: 9px;
+        background: root.enabled ? Theme.input-bg : Theme.action-disabled-bg;
+        border-width: 1px;
+        border-color: root.focused ? Theme.brand : Theme.border;
+
+        scroll := ScrollView {
+            x: 10px; y: 8px;
+            width: parent.width - 20px;
+            height: parent.height - 16px;
+            viewport-height: max(input.preferred-height, self.visible-height);
+
+            input := TextInput {
+                width: parent.visible-width;
+                text <=> root.text;
+                enabled: root.enabled;
+                color: Theme.heading;
+                font-size: Theme.font-body;
+                single-line: false;
+                wrap: word-wrap;
+                // 光标跟随滚动，否则往下打字会打出可见区域。
+                cursor-position-changed(cursor) => {
+                    if cursor.y + self.font-size > -scroll.viewport-y + scroll.visible-height {
+                        scroll.viewport-y = scroll.visible-height - cursor.y - self.font-size;
+                    } else if cursor.y < -scroll.viewport-y {
+                        scroll.viewport-y = -cursor.y;
+                    }
+                }
+            }
+        }
+        if root.text == "": Text {
+            x: 10px; y: 9px; width: parent.width - 20px;
+            text: root.placeholder;
+            color: Theme.hint;
+            font-size: Theme.font-tiny;
+            wrap: word-wrap;
+        }
+    }
+}
