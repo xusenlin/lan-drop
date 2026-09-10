@@ -1,0 +1,14 @@
+import { Theme } from "../theme.slint";
+
+// SVG 由图片解码器栅格化，兼容软件渲染器，无需依赖符号字体。
+// 外层容器可随横向布局拉伸，内部图形始终垂直居中。
+export component Icon inherits Rectangle {
+    in property <image> source;
+    in property <color> ink: Theme.brand;
+    width: 18px; preferred-height: 18px;
+    Image {
+        source: root.source; colorize: root.ink; image-fit: contain;
+        width: parent.width; height: min(parent.width, parent.height);
+        y: (parent.height - self.height) / 2;
+    }
+}

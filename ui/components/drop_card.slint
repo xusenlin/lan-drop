@@ -1,0 +1,34 @@
+import { Theme } from "../theme.slint";
+import { Action } from "action.slint";
+import { Icon } from "icon.slint";
+
+export component DropCard inherits Rectangle {
+    in property <bool> dragging;
+    in property <bool> compact;
+    callback pick-files();
+
+    height: root.compact ? 182px : 218px;
+    border-radius: 16px;
+    background: root.dragging ? Theme.drop-active-bg : Theme.card-bg;
+    border-width: root.dragging ? 2px : 1px;
+    border-color: root.dragging ? Theme.brand : Theme.border;
+
+    VerticalLayout {
+        padding: root.compact ? 14px : 20px; spacing: root.compact ? 6px : 10px;
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: root.compact ? 38px : 48px; height: root.compact ? 38px : 48px; border-radius: 15px; background: #edf4ed;
+                Icon { source: @image-url("../icons/upload.svg"); width: 25px; height: 25px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+            }
+        }
+        Text {
+            text: root.dragging ? "松开即可共享" : "把文件拖到这里";
+            color: Theme.heading; font-size: Theme.font-heading; font-weight: 700;
+            horizontal-alignment: center;
+        }
+        Text { text: "支持多个文件 · 单个最大 10 GiB"; color: Theme.muted; font-size: Theme.font-micro; horizontal-alignment: center; }
+        Rectangle { height: 2px; }
+        Action { label: "选择文件"; icon: @image-url("../icons/plus.svg"); clicked => { root.pick-files(); } }
+    }
+}

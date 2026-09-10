@@ -1,0 +1,86 @@
+// ============================================================
+// 全局主题
+// ============================================================
+//
+// `global` 是 Slint 的全局单例：不渲染任何东西，只是一包可以在任何
+// .slint 文件里用 `Theme.xxx` 直接读到的属性，不需要层层传参。
+//
+// 字体两项是 `in-out`，因为要由 Rust 在启动时按平台写入
+// （`ui.global::<Theme>().set_symbol_font(...)`），所以 app.slint
+// 末尾必须 `export { Theme }`，否则 Rust 侧不会生成这些 setter。
+// 颜色和字号是 `out`，对外只读。
+// ============================================================
+
+export global Theme {
+    // ---- 字体 ----
+    // 软件渲染器只用一个字型渲染整段文字，没有逐字回退，所以这两项都要
+    // 由 Rust 按平台点名具体字体，不能留给默认值。详见 src/main.rs。
+    in-out property <string> font-family;
+    // 中文字体普遍不含 ↗ ↑ ↓（U+2197/2191/2193），单独给符号用。
+    in-out property <string> symbol-font;
+
+    // ---- 背景 ----
+    out property <color> window-bg: #f5f6f2;
+    out property <color> card-bg: #ffffff;
+    out property <color> hero-bg: #234e3e;
+    out property <color> row-bg: #f7f9f6;
+    out property <color> drop-active-bg: #d9efde;
+
+    // ---- 主色（品牌绿）----
+    out property <color> brand: #22865e;
+    out property <color> brand-hover: #176b4c;
+    out property <color> brand-title: #203e30;
+    out property <color> brand-sub: #7a8b80;
+
+    // ---- 文字 ----
+    out property <color> heading: #294536;         // 卡片标题
+    out property <color> url-text: #204e36;
+    out property <color> eyebrow: #678466;         // 地址卡上方的小标签
+    out property <color> hero-desc: #6d836c;
+    out property <color> file-name: #304939;
+    out property <color> status-text: #51705a;
+    out property <color> empty-title: #58735f;
+    // 下面四个灰度非常接近（差别都在 2% 以内），是历史上分散写死的结果，
+    // 想统一成一个的话改这里即可。
+    out property <color> muted: #748278;           // 卡片内说明文字
+    out property <color> file-detail: #7b897f;
+    out property <color> footer: #7b887e;
+    out property <color> hint: #87948a;
+
+    // ---- 边框 ----
+    out property <color> border: #e2e8df;
+    out property <color> drop-border: #dce5db;
+
+    // ---- 状态胶囊 ----
+    out property <color> online-bg: #e1eee4;
+    out property <color> online-text: #278153;
+    out property <color> offline-bg: #fbe3df;
+    out property <color> offline-text: #ad4436;
+
+    // ---- 按钮 ----
+    out property <color> action-bg: #f3f6f0;
+    out property <color> action-hover-bg: #e5ece6;
+    out property <color> action-text: #365344;
+    out property <color> action-disabled-bg: #e5e9e6;
+    out property <color> action-disabled-text: #8c9890;
+
+    // ---- 文件类型标签 ----
+    out property <color> tag-text-bg: #e6eee2;
+    out property <color> tag-text-ink: #527946;
+    out property <color> tag-file-bg: #e7ecf0;
+    out property <color> tag-file-ink: #607588;
+
+    // ---- 空状态 ----
+    out property <color> empty-symbol: #adc3af;
+
+    // ---- 字号 ----
+    // `length` 的字面量必须带单位。
+    out property <length> font-url: 26px;
+    out property <length> font-title: 25px;
+    out property <length> font-heading: 18px;
+    out property <length> font-body: 14px;
+    out property <length> font-small: 13px;
+    out property <length> font-tiny: 12px;
+    out property <length> font-micro: 11px;
+    out property <length> font-nano: 10px;
+}

@@ -1,0 +1,45 @@
+import { Theme } from "../theme.slint";
+
+// 顶部：品牌标 + 名称 + 服务状态胶囊。
+export component BrandHeader inherits HorizontalLayout {
+    in property <bool> online;
+
+    height: 52px;
+    spacing: 14px;
+
+    // 喵咪图标。圆角是烤进 PNG 的 alpha 通道的，不能靠 Slint 的 clip：
+    // 软件渲染器的 combine_clip 直接忽略 border-radius（源码里就写着 TODO）。
+    Rectangle {
+        width: 48px;
+        Image {
+            source: @image-url("../../assets/app-icon-256.png");
+            image-fit: contain;
+            width: parent.width; height: parent.width;
+        }
+    }
+    VerticalLayout {
+        spacing: 3px;
+        Text { text: "LAN Drop"; font-size: Theme.font-title; font-weight: 700; color: Theme.brand-title; }
+        Text { text: "就在身边，轻松共享。"; font-size: Theme.font-tiny; color: Theme.brand-sub; }
+    }
+    Rectangle {
+        width: 118px; height: 32px; border-radius: 16px;
+        background: root.online ? Theme.online-bg : Theme.offline-bg;
+        // 圆点用图形画，不用 ● —— 它和中文混在一行，没法单独换字体。
+        HorizontalLayout {
+            alignment: center; spacing: 7px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 7px; height: 7px; border-radius: 3.5px;
+                    background: root.online ? Theme.online-text : Theme.offline-text;
+                }
+            }
+            Text {
+                text: root.online ? "服务已启动" : "服务已停止";
+                color: root.online ? Theme.online-text : Theme.offline-text;
+                font-size: Theme.font-tiny; vertical-alignment: center;
+            }
+        }
+    }
+}

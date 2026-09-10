@@ -1,0 +1,44 @@
+[package]
+name = "lan-drop"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A portable LAN file and text sharing app"
+
+[dependencies]
+anyhow = "1"
+# 已由 i-slint-core 引入，这里只是声明为直接依赖；用来把文件时间格式化为本地时间。
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+axum = { version = "0.8", features = ["multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "fs", "io-util", "signal", "sync", "time"] }
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+slint = { version = "=1.13.1", default-features = false, features = ["std", "compat-1-2", "backend-winit-x11", "renderer-software"] }
+i-slint-backend-winit = { version = "=1.13.1", features = ["x11", "renderer-software"] }
+if-addrs = "0.14"
+open = "5"
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+tempfile = "3"
+percent-encoding = "2"
+libc = "0.2"
+arboard = { version = "3.6", default-features = false }
+# 已由 Slint 的 image-decoders 引入；这里只解码内嵌的图标 PNG 给窗口用。
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# The optional system file picker must not make libwayland a launch dependency.
+wayland-sys = { version = "0.31", features = ["dlopen"] }
+
+[build-dependencies]
+slint-build = "=1.13.1"
+winresource = { version = "0.1.31", default-features = false }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1

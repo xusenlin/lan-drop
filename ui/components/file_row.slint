@@ -1,0 +1,49 @@
+import { Theme } from "../theme.slint";
+import { Action } from "action.slint";
+import { Icon } from "icon.slint";
+import { FileRow } from "../types.slint";
+
+export component FileRowItem inherits Rectangle {
+    in property <FileRow> file;
+    callback copy-text(string);
+    callback open-file(string);
+
+    height: 76px;
+    background: hover.has-hover ? #f0f5f0 : Theme.row-bg;
+    border-radius: 11px;
+    hover := TouchArea { }
+
+    HorizontalLayout {
+        padding: 12px; spacing: 12px;
+        Rectangle {
+            width: 42px; height: 48px; border-radius: 10px;
+            background: root.file.is-text ? Theme.tag-text-bg : Theme.tag-file-bg;
+            VerticalLayout {
+                alignment: center; spacing: 3px;
+                HorizontalLayout {
+                    alignment: center;
+                    Icon {
+                        source: root.file.is-text ? @image-url("../icons/note.svg") : @image-url("../icons/file.svg");
+                        width: 21px; height: 21px;
+                        ink: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
+                    }
+                }
+                Text {
+                    text: root.file.is-text ? "TXT" : "FILE";
+                    color: root.file.is-text ? Theme.tag-text-ink : Theme.tag-file-ink;
+                    font-size: 8px; font-weight: 700; horizontal-alignment: center;
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 7px; alignment: center;
+            Text { text: root.file.name; color: Theme.file-name; font-size: Theme.font-small; font-weight: 600; overflow: elide; }
+            Text { text: root.file.detail; color: Theme.file-detail; font-size: Theme.font-micro; overflow: elide; }
+        }
+        if root.file.is-text: Action {
+            width: 65px; height: 30px; label: "复制"; icon: @image-url("../icons/copy.svg"); quiet: true;
+            clicked => { root.copy-text(root.file.name); }
+        }
+        Action { width: 65px; height: 30px; label: "打开"; icon: @image-url("../icons/external.svg"); quiet: true; clicked => { root.open-file(root.file.name); } }
+    }
+}

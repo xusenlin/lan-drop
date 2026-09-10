@@ -1,0 +1,60 @@
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { Action } from "action.slint";
+import { Icon } from "icon.slint";
+import { FileRowItem } from "file_row.slint";
+import { EmptyState } from "empty_state.slint";
+import { FileRow } from "../types.slint";
+
+export component SharedPanel inherits Rectangle {
+    in property <int> file-count;
+    in property <string> total-size;
+    in property <[FileRow]> files;
+    callback refresh(); callback open-folder();
+    callback copy-text(string); callback open-file(string);
+
+    background: Theme.card-bg;
+    border-radius: 16px;
+    border-width: 1px; border-color: Theme.border;
+
+    VerticalLayout {
+        padding: 22px; spacing: 18px;
+        HorizontalLayout {
+            height: 42px; spacing: 12px;
+            Rectangle {
+                width: 40px; height: 40px; border-radius: 12px; background: #edf4ed;
+                Icon { source: @image-url("../icons/grid.svg"); x: 10px; y: 10px; width: 20px; height: 20px; }
+            }
+            VerticalLayout {
+                spacing: 5px; alignment: center;
+                Text { text: "共享空间"; font-size: Theme.font-heading; font-weight: 700; color: Theme.heading; }
+                Text { text: root.file-count + " 个文件 · " + root.total-size; color: Theme.muted; font-size: Theme.font-micro; }
+            }
+            Action { width: 72px; height: 32px; label: "刷新"; icon: @image-url("../icons/refresh.svg"); quiet: true; clicked => { root.refresh(); } }
+        }
+        Rectangle { height: 1px; background: Theme.border; }
+        HorizontalLayout {
+            height: 16px;
+            Text { text: "名称 / 修改时间"; color: Theme.muted; font-size: Theme.font-micro; }
+            Text { text: "每 2 秒自动同步"; horizontal-alignment: right; color: Theme.muted; font-size: Theme.font-micro; }
+        }
+        if root.file-count == 0: EmptyState { }
+        if root.file-count > 0: ScrollView {
+            VerticalLayout {
+                spacing: 8px;
+                for file in root.files: FileRowItem {
+                    file: file;
+                    copy-text(name) => { root.copy-text(name); }
+                    open-file(name) => { root.open-file(name); }
+                }
+                Rectangle { vertical-stretch: 1; }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.border; }
+        HorizontalLayout {
+            height: 34px; spacing: 10px;
+            Text { text: "文件保存在本机"; color: Theme.muted; font-size: Theme.font-micro; vertical-alignment: center; }
+            Action { width: 144px; height: 34px; label: "打开数据文件夹"; icon: @image-url("../icons/folder.svg"); quiet: true; clicked => { root.open-folder(); } }
+        }
+    }
+}

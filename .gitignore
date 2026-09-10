@@ -1,0 +1,7 @@
+/target/
+/dist/*
+!/dist/.gitkeep
+/LanDropData/
+/.build/
+.DS_Store
+

@@ -1,0 +1,45 @@
+import { Theme } from "../theme.slint";
+import { Action } from "action.slint";
+import { Icon } from "icon.slint";
+
+export component AddressCard inherits Rectangle {
+    in property <string> url;
+    in property <bool> compact;
+    in property <bool> show-art;
+    callback open-browser();
+    callback copy-address();
+
+    height: root.compact ? 114px : 144px;
+    background: Theme.hero-bg;
+    border-radius: 18px;
+
+    HorizontalLayout {
+        padding: root.compact ? 18px : 24px; spacing: 20px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center; spacing: root.compact ? 6px : 10px;
+            HorizontalLayout {
+                height: 16px; alignment: start; spacing: 7px;
+                Icon { source: @image-url("../icons/wifi.svg"); width: 16px; height: 16px; ink: #a9cdbb; }
+                Text { text: "局域网访问地址"; color: #b9d5c6; font-size: Theme.font-micro; font-weight: 600; }
+            }
+            Text {
+                height: 34px;
+                text: root.url; color: #f7fbf6; font-size: Theme.font-url;
+                font-weight: 700;
+                vertical-alignment: center; horizontal-alignment: left;
+                TouchArea { mouse-cursor: pointer; clicked => { root.open-browser(); } }
+            }
+            Text { text: "同一网络，打开浏览器即可分享。"; color: #b9d5c6; font-size: Theme.font-tiny; }
+        }
+        if root.show-art: Image {
+            source: @image-url("../icons/devices.svg");
+            width: 166px; image-fit: contain;
+        }
+        VerticalLayout {
+            width: 126px; alignment: center; spacing: root.compact ? 6px : 10px;
+            Action { label: "打开网页"; icon: @image-url("../icons/external.svg"); on-dark: true; clicked => { root.open-browser(); } }
+            Action { label: "复制地址"; icon: @image-url("../icons/copy.svg"); clicked => { root.copy-address(); } }
+        }
+    }
+}

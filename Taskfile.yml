@@ -1,0 +1,36 @@
+version: '3'
+
+tasks:
+  default:
+    cmds: [task --list]
+
+  build:
+    desc: 编译 macOS arm64、Windows x64、Linux x64 三个独立二进制到 dist（macOS 主机 + Docker）
+    cmds:
+      - python3 scripts/build.py all
+
+  build:native:
+    desc: 编译当前系统的独立二进制到 dist
+    cmds:
+      - python3 scripts/build.py native
+
+  build:cross:
+    desc: 使用 Docker 编译 Windows x64 和 Linux x64 到 dist
+    cmds:
+      - python3 scripts/build.py cross
+
+  run:
+    desc: 运行桌面 App
+    cmds:
+      - cargo run --locked
+
+  test:
+    desc: 运行存储与 HTTP 集成测试
+    cmds:
+      - cargo test --locked
+
+  check:
+    desc: 格式和静态检查
+    cmds:
+      - cargo fmt --check
+      - cargo clippy --locked --all-targets -- -D warnings

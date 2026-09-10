@@ -1,0 +1,13 @@
+import { Theme } from "../theme.slint";
+
+export component EmptyState inherits Rectangle {
+    VerticalLayout {
+        alignment: center; spacing: 12px;
+        HorizontalLayout {
+            alignment: center;
+            Image { source: @image-url("../icons/empty.svg"); width: 144px; height: 108px; image-fit: contain; }
+        }
+        Text { text: "你的共享空间，准备好了"; color: Theme.empty-title; font-size: 16px; font-weight: 600; horizontal-alignment: center; }
+        Text { text: "拖入第一份文件，让分享从这里开始。"; color: Theme.muted; font-size: Theme.font-tiny; horizontal-alignment: center; }
+    }
+}

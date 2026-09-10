@@ -1,0 +1,92 @@
+// 根窗口：只负责声明与 Rust 交互的状态和回调，然后把组件拼起来。
+// 具体样式在 ui/theme.slint，各块界面在 ui/components/。
+import { Theme } from "theme.slint";
+import { FileRow } from "types.slint";
+import { BrandHeader } from "components/brand_header.slint";
+import { AddressCard } from "components/address_card.slint";
+import { DropCard } from "components/drop_card.slint";
+import { TextCard } from "components/text_card.slint";
+import { SharedPanel } from "components/shared_panel.slint";
+import { StatusBar } from "components/status_bar.slint";
+
+export component AppWindow inherits Window {
+    title: "LAN Drop · 局域网共享";
+    preferred-width: 1080px; preferred-height: 850px;
+    min-width: 900px; min-height: 760px;
+    background: Theme.window-bg;
+    default-font-size: Theme.font-body;
+    default-font-family: Theme.font-family;
+
+    // 尺寸断点由 winit 的 Resized 事件写入，避免 Slint 布局尺寸循环依赖。
+    in property <bool> compact;
+    in property <bool> wide-layout: true;
+
+    in property <string> server-url;
+    in property <string> all-urls;
+    in property <string> data-path;
+    in property <string> status;
+    in property <int> file-count;
+    in property <string> total-size: "0 B";
+    in property <[FileRow]> files;
+    in-out property <string> draft;
+    in property <bool> dragging;
+    in property <bool> saving;
+    in property <bool> online: true;
+
+    callback open-browser(); callback copy-address(); callback open-folder();
+    callback pick-files(); callback paste-text(); callback save-text(string);
+    callback open-file(string); callback copy-text(string); callback refresh();
+    callback open-github();
+
+    VerticalLayout {
+        padding: root.compact ? 20px : 28px; spacing: root.compact ? 14px : 22px;
+
+        BrandHeader { online: root.online; height: root.compact ? 44px : 52px; }
+
+        AddressCard {
+            url: root.server-url;
+            compact: root.compact;
+            show-art: root.wide-layout;
+            open-browser => { root.open-browser(); }
+            copy-address => { root.copy-address(); }
+        }
+
+        HorizontalLayout {
+            spacing: 20px;
+            VerticalLayout {
+                width: 332px; spacing: root.compact ? 12px : 16px;
+                DropCard {
+                    dragging: root.dragging;
+                    compact: root.compact;
+                    pick-files => { root.pick-files(); }
+                }
+                TextCard {
+                    draft <=> root.draft;
+                    compact: root.compact;
+                    saving: root.saving;
+                    paste-text => { root.paste-text(); }
+                    save-text(text) => { root.save-text(text); }
+                }
+            }
+            SharedPanel {
+                file-count: root.file-count;
+                total-size: root.total-size;
+                files: root.files;
+                refresh => { root.refresh(); }
+                open-folder => { root.open-folder(); }
+                copy-text(name) => { root.copy-text(name); }
+                open-file(name) => { root.open-file(name); }
+            }
+        }
+
+        StatusBar {
+            status: root.status;
+            all-urls: root.all-urls;
+            data-path: root.data-path;
+            open-github => { root.open-github(); }
+        }
+    }
+}
+
+// 让 Rust 能通过 `ui.global::<Theme>()` 写入按平台选定的字体。
+export { Theme }

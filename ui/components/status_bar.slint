@@ -1,0 +1,52 @@
+import { Theme } from "../theme.slint";
+import { Icon } from "icon.slint";
+
+// 窗口底部：当前状态、其他网卡地址、数据目录，右下角是项目仓库地址。
+export component StatusBar inherits VerticalLayout {
+    in property <string> status;
+    in property <string> all-urls;
+    in property <string> data-path;
+    callback open-github();
+
+    spacing: 6px;
+    height: 43px;
+
+    Text { text: root.status; color: Theme.status-text; font-size: Theme.font-tiny; overflow: elide; }
+    HorizontalLayout {
+        spacing: 6px;
+        Icon { source: @image-url("../icons/link.svg"); width: 11px; ink: Theme.footer; }
+        Text { text: "其他地址：" + root.all-urls; color: Theme.footer; font-size: Theme.font-nano; overflow: elide; }
+    }
+    HorizontalLayout {
+        spacing: 6px;
+        Icon { source: @image-url("../icons/folder.svg"); width: 11px; ink: Theme.footer; }
+        Text {
+            text: root.data-path; color: Theme.footer; font-size: Theme.font-nano;
+            overflow: elide; horizontal-stretch: 1; vertical-alignment: center;
+        }
+        // 点击热区只包住图标和仓库地址。
+        Rectangle {
+            horizontal-stretch: 0;
+            HorizontalLayout {
+                alignment: end; spacing: 5px;
+                VerticalLayout {
+                    alignment: center;
+                    // GitHub 图标只能用位图：软件渲染器的 draw_path 是个空函数，
+                    // Path 元素画不出来（i-slint-core 源码里就是 TODO）。
+                    // 图放在组件旁边：assets/ 是 app 图标专用的，三个文件都由
+                    // scripts/build.py 从 app-icon.png 母图生成。
+                    Image {
+                        source: @image-url("github-mark.png");
+                        image-fit: contain;
+                        width: 12px; height: 12px;
+                    }
+                }
+                Text {
+                    text: "github.com/xusenlin/lan-drop"; color: Theme.status-text;
+                    font-size: Theme.font-nano; vertical-alignment: center;
+                }
+            }
+            TouchArea { mouse-cursor: pointer; clicked => { root.open-github(); } }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+import { TextEdit } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { Action } from "action.slint";
+import { Icon } from "icon.slint";
+
+export component TextCard inherits Rectangle {
+    in-out property <string> draft;
+    in property <bool> saving;
+    in property <bool> compact;
+    callback paste-text();
+    callback save-text(string);
+
+    min-height: root.compact ? 200px : 230px;
+    border-radius: 16px;
+    background: Theme.card-bg;
+    border-width: 1px;
+    border-color: Theme.border;
+
+    VerticalLayout {
+        padding: root.compact ? 14px : 18px; spacing: root.compact ? 8px : 12px;
+        HorizontalLayout {
+            height: 28px; spacing: 8px;
+            Icon { source: @image-url("../icons/note.svg"); }
+            Text { text: "分享文字"; color: Theme.heading; font-size: 15px; font-weight: 700; vertical-alignment: center; }
+            Action { width: 68px; height: 28px; label: "粘贴"; icon: @image-url("../icons/clipboard.svg"); quiet: true; enabled: !root.saving; clicked => { root.paste-text(); } }
+        }
+        Rectangle {
+            min-height: root.compact ? 60px : 78px; vertical-stretch: 1;
+            editor := TextEdit { width: parent.width; height: parent.height; text <=> root.draft; enabled: !root.saving; wrap: word-wrap; }
+            if root.draft == "": Text {
+                x: 12px; y: 10px; width: parent.width - 24px;
+                text: "写点什么，或粘贴链接、笔记…";
+                color: Theme.hint; font-size: Theme.font-tiny;
+            }
+        }
+        Text { text: "自动保存为 .txt 文件 · 最大 1 MiB"; color: Theme.muted; font-size: Theme.font-micro; }
+        Action {
+            label: root.saving ? "正在保存…" : "保存并共享";
+            icon: @image-url("../icons/send.svg"); primary: true;
+            enabled: !root.saving && root.draft != "";
+            clicked => { root.save-text(root.draft); }
+        }
+    }
+}
