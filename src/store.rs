@@ -55,7 +55,11 @@ impl Store {
             }
             let Ok(meta) = item.metadata() else { continue };
             entries.push(Entry {
-                is_text: name.to_ascii_lowercase().ends_with(".txt"),
+                // 不用 to_ascii_lowercase：那会给目录里每个文件都分配一个 String，
+                // 而这个函数每 2 秒就跑一遍。
+                is_text: name
+                    .rsplit_once('.')
+                    .is_some_and(|(_, ext)| ext.eq_ignore_ascii_case("txt")),
                 name,
                 size: meta.len(),
                 modified: meta
@@ -109,14 +113,18 @@ impl Store {
             .context("File names must be valid UTF-8")?;
         validate_name(name)?;
         let mut input = fs::File::open(source)?;
-        if !input.metadata()?.is_file() {
+        let meta = input.metadata()?;
+        if !meta.is_file() {
             bail!("Please choose a file; compress folders first");
         }
+        if meta.len() > MAX_UPLOAD_BYTES {
+            bail!("A single file cannot exceed 10 GiB");
+        }
         let mut temp = self.temporary()?;
-        let size = std::io::copy(
-            &mut Read::by_ref(&mut input).take(MAX_UPLOAD_BYTES + 1),
-            &mut temp,
-        )?;
+        // 两边都传具体的 File，io::copy 才能走平台快路径（Linux 上是
+        // copy_file_range）。包一层 Take 或 NamedTempFile 会退回逐块搬运。
+        // 大小提前查过了，这里再兜一次底，防的是拷贝过程中源文件被写大。
+        let size = std::io::copy(&mut input, temp.as_file_mut())?;
         if size > MAX_UPLOAD_BYTES {
             bail!("A single file cannot exceed 10 GiB");
         }
@@ -226,11 +234,16 @@ pub fn validate_name(name: &str) -> Result<()> {
     {
         bail!("Invalid file name: hidden files, paths and special characters are not supported");
     }
-    let base = name.split('.').next().unwrap_or("").to_ascii_uppercase();
-    if ["CON", "PRN", "AUX", "NUL"].contains(&base.as_str())
-        || (base.len() == 4
-            && (base.starts_with("COM") || base.starts_with("LPT"))
-            && matches!(base.as_bytes()[3], b'1'..=b'9'))
+    // 全程大小写不敏感地比，不做 to_ascii_uppercase——那会给目录里每个文件都
+    // 分配一个 String，而 list() 每 2 秒就对整个目录调一遍这个函数。
+    let base = name.split('.').next().unwrap_or("").as_bytes();
+    let device = base.len() == 4
+        && (base[..3].eq_ignore_ascii_case(b"COM") || base[..3].eq_ignore_ascii_case(b"LPT"))
+        && matches!(base[3], b'1'..=b'9');
+    if device
+        || [&b"CON"[..], b"PRN", b"AUX", b"NUL"]
+            .iter()
+            .any(|reserved| base.eq_ignore_ascii_case(reserved))
     {
         bail!("This name is reserved on Windows");
     }
@@ -329,6 +342,36 @@ mod tests {
         for entry in store.list().unwrap() {
             assert!(validate_name(&entry.name).is_ok(), "{}", entry.name);
         }
+    }
+    #[test]
+    fn import_copies_files_and_rejects_folders_and_oversize() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::new(dir.path().join("data")).unwrap();
+        let source = dir.path().join("report.pdf");
+        fs::write(&source, b"hello import").unwrap();
+
+        assert_eq!(store.import(&source).unwrap(), "report.pdf");
+        assert_eq!(
+            fs::read(store.root().join("report.pdf")).unwrap(),
+            b"hello import"
+        );
+        // 同名不覆盖。
+        assert_eq!(store.import(&source).unwrap(), "report (1).pdf");
+
+        let folder = dir.path().join("stuff");
+        fs::create_dir(&folder).unwrap();
+        assert!(store.import(&folder).is_err());
+
+        // 超过上限的在开拷之前就被挡掉：稀疏文件，不真的占 10 GiB 磁盘。
+        let huge = dir.path().join("huge.bin");
+        fs::File::create(&huge)
+            .unwrap()
+            .set_len(MAX_UPLOAD_BYTES + 1)
+            .unwrap();
+        assert!(store.import(&huge).is_err());
+
+        // 被拒绝的导入不该在共享目录里留下痕迹。
+        assert_eq!(store.list().unwrap().len(), 2);
     }
     #[cfg(unix)]
     #[test]
