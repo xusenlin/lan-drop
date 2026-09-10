@@ -1,122 +1,127 @@
 # LAN Drop
 
-Rust + Slint 编写的局域网文件与文字共享 App。启动桌面端即开启 HTTP 服务，同一局域网内的电脑、手机和平板可直接用浏览器上传和下载，无需账号。
+**English** · [简体中文](README.zh-CN.md)
 
-## 特点
+A LAN file and text sharing app written in Rust + Slint. Launch the desktop app and an HTTP server starts with it — any computer, phone or tablet on the same network can upload and download straight from a browser. No accounts.
 
-**不套 webview。** 桌面界面由 Slint 直接绘制，不是 Electron / Tauri 那样在本地再跑一个浏览器内核。装的时候不需要 WebView2，Linux 上也不需要 webkit2gtk、GTK 这一串东西——Linux 版实际的动态依赖只有三个：
+## Highlights
+
+**No webview.** The desktop UI is drawn by Slint directly, rather than running a browser engine locally the way Electron or Tauri does. There is no WebView2 to install, and no webkit2gtk or GTK stack needed on Linux — the Linux build has exactly three dynamic dependencies:
 
 ```
 libc.so.6  libm.so.6  libgcc_s.so.1
 ```
 
-**体积很小，单文件免安装。** 界面、图标和网页端全部编进可执行文件：
+**Small, single file, no installer.** The UI, the icons and the whole web front end are compiled into the executable:
 
-| 平台 | 大小 |
+| Platform | Size |
 | --- | --- |
 | macOS / Apple Silicon | 3.7 MB |
 | Windows / x64 | 4.6 MB |
 | Linux / x64 | 7.3 MB |
 
-放哪儿都能跑，删掉就干净了，不写注册表、不装服务、不留后台进程。Windows 版静态链接 CRT，不用先装 VC++ 运行库。
+Drop it anywhere and run it; delete it and nothing is left behind. It writes no registry keys, installs no service and leaves no background process. The Windows build links the CRT statically, so there is no VC++ runtime to install first.
 
-**软件渲染，不挑机器。** 不依赖 GPU 驱动和 OpenGL，虚拟机、远程桌面、老机器上都能正常显示。
+**Software rendering, runs anywhere.** No GPU driver and no OpenGL required, so it displays correctly in virtual machines, over remote desktop and on old hardware.
 
-**只在局域网里，数据不出本机。** 没有账号、没有云端、没有遥测，文件就躺在 `LanDropData/` 目录里，随时能直接打开。对面设备只要有浏览器就行，不用装任何东西。
+**Stays on your LAN.** No account, no cloud, no telemetry. Files sit in a plain `LanDropData/` directory you can open at any time. The other device needs nothing but a browser.
 
-## 截图
+## Screenshots
 
-桌面端：拖入文件或粘贴文字，顶部显示局域网访问地址。
+Desktop: drop in files or paste text; the LAN address is shown at the top.
 
-![LAN Drop 桌面端窗口](assets/screenshots/desktop.png)
+![LAN Drop desktop window](assets/screenshots/desktop.png)
 
-网页端：同一局域网的任意设备打开地址即可，支持搜索、筛选、预览与下载。
+Web: open the address from any device on the same network — search, filter, preview and download.
 
-![LAN Drop 网页端界面](assets/screenshots/web.png)
+![LAN Drop web interface](assets/screenshots/web.png)
 
-## 使用
+## Usage
 
-将对应平台的二进制放到一个**可写目录**并启动：
+Put the binary for your platform in a **writable directory** and start it:
 
-| 平台 | 文件 |
+| Platform | File |
 | --- | --- |
 | macOS / Apple Silicon | `dist/LAN Drop.app` |
 | Windows / x64 | `dist/lan-drop-windows-x64.exe` |
 | Linux / x64 | `dist/lan-drop-linux-x64` |
 
-macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全一样，而裸二进制在 Finder 里双击会经由 Terminal 启动，多一个终端窗口，也没有图标和 Dock 名称。需要命令行时直接调用 `LAN Drop.app/Contents/MacOS/lan-drop --headless`。
+macOS ships only the `.app`, with no separate bare binary — the contents are identical, but double-clicking a bare binary in Finder launches it through Terminal, which adds a stray terminal window and gives it no icon or Dock name. For command line use, call `LAN Drop.app/Contents/MacOS/lan-drop --headless` directly.
 
-桌面端显示实际访问地址，例如 `http://192.168.1.10:8765`。点击地址或“打开网页”可直接访问，“复制地址”方便发送给其他设备。
+The interface is currently Chinese-only, so the button labels below are quoted as they appear on screen.
 
-- 将文件拖进桌面窗口或网页，也可以点击“选择文件”，支持多文件选择。
-- 在文字框粘贴内容，点击“保存并共享”，以 UTF-8 `.txt` 文件保存。文件名取内容开头的 28 个字符，换行和文件名不允许的字符换成空格；开头没有可用字符时用 `文字-<时间戳>.txt`。
-- 文件和文字全部保存在 **`LanDropData/`**，与终端当前工作目录无关；首次启动自动创建。位置规则：
+The desktop window shows the real address, for example `http://192.168.1.10:8765`. Click the address or 打开网页 (open page) to open it; 复制地址 (copy address) copies it so you can send it to another device.
 
-  | 情况 | 数据目录 |
+- Drag files onto the desktop window or the web page, or click 选择文件 (choose files); multiple files are supported.
+- Paste into the text box and click 保存并共享 (save and share) to store it as a UTF-8 `.txt` file. The file name is taken from the first 28 characters of the content, with newlines and characters that are illegal in file names replaced by spaces; if there is nothing usable at the start, `文字-<timestamp>.txt` is used instead.
+- Files and text all live in **`LanDropData/`**, regardless of the shell's working directory; it is created on first launch. Where it goes:
+
+  | Case | Data directory |
   | --- | --- |
-  | 裸二进制 | 可执行文件旁边的 `LanDropData/` |
-  | macOS `.app`，放在下载、桌面、U 盘等处 | `.app` **旁边**的 `LanDropData/`（保持免安装、可携带） |
-  | macOS `.app`，装进 `/Applications` | 个人目录下的 `~/LanDropData/` |
+  | Bare binary | `LanDropData/` next to the executable |
+  | macOS `.app` in Downloads, Desktop, a USB drive, … | `LanDropData/` **next to** the `.app` (stays portable, no install) |
+  | macOS `.app` installed into `/Applications` | `~/LanDropData/` in your home directory |
 
-  `.app` 的数据不会写进 bundle 内部，那样会破坏代码签名。装进 `/Applications` 后之所以换位置，是因为那里属主为 `root:admin`——管理员账号能写，会被悄悄塞进一个用户数据目录，而非管理员账号根本写不了。窗口底部始终显示当前实际路径。
-- 桌面与网页每 2 秒自动更新共享列表。网页支持名称搜索、类型筛选、文字预览与复制、文件下载、上传进度。
-- 同名文件自动增加 `(1)`、`(2)`，不会覆盖已有文件。上传与复制使用临时文件，完成后才出现在列表中；失败请求自动清理临时文件。
-- 单文件最大 10 GiB，文字最大 1 MiB；文件夹请先压缩。中断的文件需要重新上传，暂不支持断点续传。
-- 可以直接在 `LanDropData/` 内增删普通文件，列表会同步更新；不共享隐藏文件、子目录或符号链接。
-- 关闭 App 会停止 HTTP 服务，已经保存的文件会保留。不要在传输时关闭 App。
+  Data is never written inside the `.app` bundle, which would break its code signature. The location changes under `/Applications` because that directory is owned by `root:admin` — an admin account can write there and would silently end up with a user data directory inside a system folder, while a non-admin account cannot write there at all. The window footer always shows the path in use.
 
-默认监听 `0.0.0.0:8765`；占用时尝试后续 20 个端口，界面显示最终端口。多个网卡的 IPv4 地址显示在窗口底部。仅有 `127.0.0.1` 时需先连接局域网，再重新启动 App。网络切换或 IP 改变后也请重新启动。
+- Both the desktop and the web page refresh the shared list every 2 seconds. The web page supports search by name, filtering by type, text preview and copy, downloads, and upload progress.
+- Name collisions get `(1)`, `(2)` appended; existing files are never overwritten. Uploads and copies go through a temporary file and only appear in the list once complete; failed requests clean their temporary files up.
+- Up to 10 GiB per file and 1 MiB per text; compress folders first. An interrupted file has to be uploaded again — resumable uploads are not supported yet.
+- You can add or remove regular files in `LanDropData/` directly and the list follows along. Hidden files, subdirectories and symlinks are not shared.
+- Closing the app stops the HTTP server; files already saved stay. Do not close it during a transfer.
+
+It listens on `0.0.0.0:8765` by default; if that port is taken it tries the next 20 and the UI shows the one it settled on. IPv4 addresses for every interface are listed in the window footer. If only `127.0.0.1` is shown, connect to the LAN first and restart the app. Restart it after switching networks or changing IP as well.
 
 ```sh
 './LAN Drop.app/Contents/MacOS/lan-drop' --port 9000
 ./lan-drop-linux-x64 --headless --port 8765
 ```
 
-`--headless` 只启动 HTTP 服务，适合无桌面 Linux；`--port 0` 自动分配空闲端口，地址写入标准输出。默认桌面启动在 Windows 不显示控制台。
+`--headless` starts only the HTTP server, which suits a Linux box with no desktop; `--port 0` picks a free port and writes the address to stdout. A normal desktop launch shows no console window on Windows.
 
-局域网 HTTP 页面受浏览器剪贴板权限限制：如“粘贴”按钮不能读取剪贴板，直接在输入框按 `Ctrl+V` / `⌘+V` 或手机长按粘贴即可。文字复制提供手动选择的回退。
+A plain-HTTP page on a LAN is limited by browser clipboard permissions: if the paste button cannot read the clipboard, press `Ctrl+V` / `⌘+V` in the input box, or long-press to paste on a phone. Copying text falls back to manual selection.
 
-## 构建
+## Building
 
-开发依赖：Rust 1.88.0（由 `rust-toolchain.toml` 固定）、[Task](https://taskfile.dev/)、Python 3.9+；三平台构建还需要 **macOS + Xcode Command Line Tools + 正在运行的 Docker**。macOS 的 SDK 由本机提供，Windows 和 Linux 使用仓库中的 Docker 构建工具链。首次构建需要联网下载依赖，后续复用 Cargo 和 Docker 缓存。
+Development requirements: Rust 1.88.0 (pinned by `rust-toolchain.toml`), [Task](https://taskfile.dev/), Python 3.9+. Building all three platforms additionally needs **macOS + Xcode Command Line Tools + a running Docker**. The macOS SDK comes from the host; Windows and Linux use the Docker toolchain in this repository. The first build downloads dependencies; later ones reuse the Cargo and Docker caches.
 
 ```sh
-task build          # 一次生成以上三个平台的 release 二进制和 SHA256SUMS
-task build:native   # 仅编译当前系统；另支持 Intel Mac
-task build:cross    # 用 Docker 编译 Windows x64、Linux x64
-task run            # 开发运行
-task test           # 存储与 HTTP 集成测试
+task build          # release binaries for all three platforms, plus SHA256SUMS
+task build:native   # current system only; Intel Mac supported too
+task build:cross    # Windows x64 and Linux x64 via Docker
+task run            # run in development
+task test           # storage and HTTP integration tests
 task check          # rustfmt + clippy
 ```
 
-`task build` 需要在 macOS 主机执行；Linux/Windows 开发机可使用 `task build:native`。默认三平台 macOS 产物是 arm64。跨平台工具链定义在 `scripts/Dockerfile.cross`，镜像名为 `lan-drop-cross:rust-1.88-v1`；Cargo registry 与编译产物存储在项目专用 Docker volumes 中。`Cargo.lock` 固定依赖，构建使用 `--locked`。
+`task build` has to run on a macOS host; on a Linux or Windows machine use `task build:native`. The macOS artifact from a full three-platform build is arm64. The cross toolchain is defined in `scripts/Dockerfile.cross` as image `lan-drop-cross:rust-1.88-v1`; the Cargo registry and build artifacts live in Docker volumes dedicated to this project. `Cargo.lock` pins dependencies and builds pass `--locked`.
 
-**运行时无需 Rust、Python、Docker、Node.js、Qt、WebView、独立 HTML 或资源文件。** Slint 界面提前编译，网页通过 `include_str!` 嵌入程序，使用软件渲染。系统自带的动态库和桌面服务仍然必要：macOS 系统框架、Windows 系统 DLL；Linux 为 glibc 桌面系统（交叉构建基于 Debian 12，glibc 2.36+），需要 X11 或 XWayland，文件选择器使用系统桌面 Portal。纯 Wayland 且没有 XWayland 的桌面不在当前支持范围内，可使用 `--headless`。界面使用系统中文字体：macOS 用苹方，Windows 用微软雅黑，Linux 交给 fontconfig 的 sans-serif，因此 Linux 需要自行安装中文字体（如 Noto Sans CJK SC）；软件渲染器不做逐字回退，选中的字体缺汉字时会显示为方块，可用 `SLINT_DEFAULT_FONT` 环境变量指定字体文件或目录。
+**At runtime it needs no Rust, Python, Docker, Node.js, Qt, WebView, or loose HTML and asset files.** The Slint UI is compiled ahead of time, the web page is embedded with `include_str!`, and rendering is done in software. Dynamic libraries and desktop services that ship with the OS are still required: system frameworks on macOS, system DLLs on Windows; on Linux a glibc desktop (the cross build targets Debian 12, glibc 2.36+) with X11 or XWayland, and the file picker uses the desktop portal. A pure Wayland desktop with no XWayland is out of scope for now — use `--headless` there. The UI uses the system CJK font: PingFang on macOS, Microsoft YaHei on Windows, and fontconfig's sans-serif on Linux, so a CJK font such as Noto Sans CJK SC has to be installed there. The software renderer does no per-glyph fallback, so a font missing Chinese characters renders them as boxes; `SLINT_DEFAULT_FONT` can point at a specific font file or directory.
 
-## 网络与数据
+## Network and data
 
-这是所有访问者共同读写的局域网中转目录，没有账号、密码或 TLS，仅应在信任的局域网中使用。允许系统防火墙的本地网络访问，不需要路由器端口转发。访客 Wi-Fi、AP 隔离或 VPN 可能阻止设备互通。不要将此端口暴露到公网。
+This is a LAN drop directory that every visitor can read and write, with no accounts, passwords or TLS — use it only on a network you trust. Allow local network access when the system firewall asks; no router port forwarding is needed. Guest Wi-Fi, AP isolation and VPNs may keep devices from reaching each other. Do not expose this port to the internet.
 
-程序限制文件名和目录访问，拒绝路径穿越、符号链接及 Windows 保留文件名；浏览器上传要求同源与自定义请求头。下载强制附件，文字预览按纯文本处理。共享目录只能使用跨平台兼容的普通文件名（不超过 200 UTF-8 字节，不含 `\\ / : * ? " < > |`）。
+File names and directory access are restricted: path traversal, symlinks and Windows reserved names are rejected, and browser uploads require same-origin plus a custom header. Downloads are forced as attachments and text previews are handled as plain text. The shared directory only accepts portable, ordinary file names (at most 200 UTF-8 bytes, none of `\ / : * ? " < > |`).
 
-## 结构
+## Layout
 
 ```text
-src/main.rs          桌面端、拖拽、剪贴板、网卡地址、启动与生命周期
-src/store.rs         共享目录、命名、流式复制、原子保存
-src/server.rs        Axum HTTP API、流式上传下载
-ui/app.slint         根窗口：与 Rust 交互的状态、回调与组件装配
-ui/theme.slint       配色、字号，以及由 Rust 按平台写入的字体
-ui/types.slint       与 Rust 共享的结构体
-ui/components/       各块界面组件、带键盘焦点的图标按钮
-ui/icons/            内嵌 SVG 操作图标与设备、空状态插图
-web/index.html       内嵌响应式网页，无 CDN 或构建依赖
-assets/app-icon.png  1024×1024 图标母图，唯一来源（圆角已烤进 alpha 通道）
-assets/app-icon-256.png  由母图派生，嵌进程序供界面、窗口图标和网页使用
-assets/app-icon.ico  由母图派生，Windows 可执行文件的资源图标
-scripts/build.py     三平台构建、图标派生、macOS .app 打包与校验和
-scripts/Dockerfile.cross  Windows/Linux 交叉编译环境
-Taskfile.yml         开发与构建命令
+src/main.rs          desktop app, drag and drop, clipboard, interface addresses, startup and lifecycle
+src/store.rs         shared directory, naming, streaming copies, atomic saves
+src/server.rs        Axum HTTP API, streaming uploads and downloads
+ui/app.slint         root window: state, callbacks and component wiring shared with Rust
+ui/theme.slint       colors, type scale, and the per-platform font Rust fills in
+ui/types.slint       structs shared with Rust
+ui/components/       UI blocks and icon buttons with keyboard focus
+ui/icons/            embedded SVG action icons, device and empty-state art
+web/index.html       embedded responsive web page, no CDN or build step
+assets/app-icon.png  1024x1024 master icon, the single source (rounded corners baked into alpha)
+assets/app-icon-256.png  derived from the master, embedded for the UI, window icon and web page
+assets/app-icon.ico  derived from the master, the Windows executable resource icon
+scripts/build.py     three-platform build, icon derivation, macOS .app packaging and checksums
+scripts/Dockerfile.cross  Windows/Linux cross-compilation environment
+Taskfile.yml         development and build commands
 ```
 
-Slint 依赖的许可选项见 [Slint 官方许可说明](https://slint.dev/terms-and-conditions)。发布产品时请按选用的许可遵循相应条件。
+Licensing options for Slint are described in [Slint's terms and conditions](https://slint.dev/terms-and-conditions). Follow the conditions of whichever license you pick when you ship.
