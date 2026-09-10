@@ -22,6 +22,15 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 Drop it anywhere and run it; delete it and nothing is left behind. It writes no registry keys, installs no service and leaves no background process. The Windows build links the CRT statically, so there is no VC++ runtime to install first.
 
+**Fast enough that the network is the limit.** Both directions stream — no file is ever held whole in memory. Over loopback, with no network in the way, 1 GiB moves in:
+
+| Direction | Time | Rate |
+| --- | --- | --- |
+| Download | 0.27 s | ~3.9 GB/s |
+| Upload | 0.18 s | ~5.7 GB/s |
+
+Measured on an Apple M5 Pro (macOS 26.5, APFS SSD) with rustc 1.88.0 and the release profile in this repo: a 1 GiB random file over HTTP to `127.0.0.1`, warm in the page cache, best of five, checksum-verified. Read it as "the program is not the bottleneck" rather than as a speed you will see — on a real network you get whatever the link gives you, roughly 113 MB/s on gigabit Ethernet.
+
 **Software rendering, runs anywhere.** No GPU driver and no OpenGL required, so it displays correctly in virtual machines, over remote desktop and on old hardware.
 
 **Stays on your LAN.** No account, no cloud, no telemetry. Files sit in a plain `LanDropData/` directory you can open at any time. The other device needs nothing but a browser.
