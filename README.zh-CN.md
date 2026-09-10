@@ -14,11 +14,11 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 **体积很小，单文件免安装。** 界面、图标和网页端全部编进可执行文件：
 
-| 平台 | 大小 |
-| --- | --- |
-| macOS / Apple Silicon | 3.7 MB |
-| Windows / x64 | 4.6 MB |
-| Linux / x64 | 7.3 MB |
+| 平台 | 程序 | 下载 |
+| --- | --- | --- |
+| macOS / Apple Silicon | 3.4 MB | 2.3 MB |
+| Windows / x64 | 4.3 MB | 2.1 MB |
+| Linux / x64 | 6.8 MB | 3.0 MB |
 
 放哪儿都能跑，删掉就干净了，不写注册表、不装服务、不留后台进程。Windows 版静态链接 CRT，不用先装 VC++ 运行库。
 
@@ -47,13 +47,19 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 ## 使用
 
-将对应平台的二进制放到一个**可写目录**并启动：
+从[最新发布](https://github.com/xusenlin/lan-drop/releases/latest)下载对应平台的文件，放到一个**可写目录**并启动：
 
-| 平台 | 文件 |
-| --- | --- |
-| macOS / Apple Silicon | `dist/LAN Drop.app` |
-| Windows / x64 | `dist/lan-drop-windows-x64.exe` |
-| Linux / x64 | `dist/lan-drop-linux-x64` |
+| 平台 | 文件 | 下载 | 解压得到 |
+| --- | --- | --- | --- |
+| macOS / Apple Silicon | `lan-drop-<版本>-macos-arm64.zip` | 2.3 MB | `LAN Drop.app` |
+| Windows / x64 | `lan-drop-<版本>-windows-x64.zip` | 2.1 MB | `lan-drop-<版本>-windows-x64.exe` |
+| Linux / x64 | `lan-drop-<版本>-linux-x64.zip` | 3.0 MB | `lan-drop-<版本>-linux-x64` |
+
+发布页的 `SHA256SUMS` 列出了每个压缩包的校验和。
+
+压缩包保留了可执行位，Linux 上解压出来应该可以直接运行；如果解压工具丢了权限，`chmod +x` 一下即可。
+
+macOS 请在访达里双击解压，不要用命令行 `unzip`——系统会给打包的 bundle 挂上 `._` 伴生文件，`unzip` 会把它们解出来，导致 `codesign` 认为签名封印损坏。本身也只有 ad-hoc 签名，首次打开需要右键“打开”，或到系统设置 → 隐私与安全性里放行。
 
 macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全一样，而裸二进制在 Finder 里双击会经由 Terminal 启动，多一个终端窗口，也没有图标和 Dock 名称。需要命令行时直接调用 `LAN Drop.app/Contents/MacOS/lan-drop --headless`。
 
@@ -82,7 +88,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 
 ```sh
 './LAN Drop.app/Contents/MacOS/lan-drop' --port 9000
-./lan-drop-linux-x64 --headless --port 8765
+./lan-drop-1.0.0-linux-x64 --headless --port 8765
 ```
 
 `--headless` 只启动 HTTP 服务，适合无桌面 Linux；`--port 0` 自动分配空闲端口，地址写入标准输出。默认桌面启动在 Windows 不显示控制台。
@@ -94,7 +100,7 @@ macOS 只产出 `.app`，不再单独提供裸二进制——两者内容完全�
 开发依赖：Rust 1.88.0（由 `rust-toolchain.toml` 固定）、[Task](https://taskfile.dev/)、Python 3.9+；三平台构建还需要 **macOS + Xcode Command Line Tools + 正在运行的 Docker**。macOS 的 SDK 由本机提供，Windows 和 Linux 使用仓库中的 Docker 构建工具链。首次构建需要联网下载依赖，后续复用 Cargo 和 Docker 缓存。
 
 ```sh
-task build          # 一次生成以上三个平台的 release 二进制和 SHA256SUMS
+task build          # 一次生成以上三个平台的 release 压缩包和 SHA256SUMS
 task build:native   # 仅编译当前系统；另支持 Intel Mac
 task build:cross    # 用 Docker 编译 Windows x64、Linux x64
 task run            # 开发运行

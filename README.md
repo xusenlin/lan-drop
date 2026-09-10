@@ -14,11 +14,11 @@ libc.so.6  libm.so.6  libgcc_s.so.1
 
 **Small, single file, no installer.** The UI, the icons and the whole web front end are compiled into the executable:
 
-| Platform | Size |
-| --- | --- |
-| macOS / Apple Silicon | 3.7 MB |
-| Windows / x64 | 4.6 MB |
-| Linux / x64 | 7.3 MB |
+| Platform | Binary | Download |
+| --- | --- | --- |
+| macOS / Apple Silicon | 3.4 MB | 2.3 MB |
+| Windows / x64 | 4.3 MB | 2.1 MB |
+| Linux / x64 | 6.8 MB | 3.0 MB |
 
 Drop it anywhere and run it; delete it and nothing is left behind. It writes no registry keys, installs no service and leaves no background process. The Windows build links the CRT statically, so there is no VC++ runtime to install first.
 
@@ -47,13 +47,19 @@ Web: open the address from any device on the same network — search, filter, pr
 
 ## Usage
 
-Put the binary for your platform in a **writable directory** and start it:
+Grab the file for your platform from the [latest release](https://github.com/xusenlin/lan-drop/releases/latest), put it in a **writable directory** and start it:
 
-| Platform | File |
-| --- | --- |
-| macOS / Apple Silicon | `dist/LAN Drop.app` |
-| Windows / x64 | `dist/lan-drop-windows-x64.exe` |
-| Linux / x64 | `dist/lan-drop-linux-x64` |
+| Platform | File | Download | Unpacks to |
+| --- | --- | --- | --- |
+| macOS / Apple Silicon | `lan-drop-<version>-macos-arm64.zip` | 2.3 MB | `LAN Drop.app` |
+| Windows / x64 | `lan-drop-<version>-windows-x64.zip` | 2.1 MB | `lan-drop-<version>-windows-x64.exe` |
+| Linux / x64 | `lan-drop-<version>-linux-x64.zip` | 3.0 MB | `lan-drop-<version>-linux-x64` |
+
+`SHA256SUMS` in the release lists the checksum of each archive.
+
+The archives keep the executable bit, so on Linux the binary should be runnable straight after unpacking; `chmod +x` it if your unzip tool dropped the permission.
+
+On macOS, unpack in Finder (double-click) rather than with the `unzip` command — `unzip` writes out the `._` companion files that macOS attaches to every archived bundle, which makes `codesign` report a broken seal. The app is only ad-hoc signed anyway, so the first launch needs a right-click → Open, or an allow in System Settings → Privacy & Security.
 
 macOS ships only the `.app`, with no separate bare binary — the contents are identical, but double-clicking a bare binary in Finder launches it through Terminal, which adds a stray terminal window and gives it no icon or Dock name. For command line use, call `LAN Drop.app/Contents/MacOS/lan-drop --headless` directly.
 
@@ -81,7 +87,7 @@ It listens on `0.0.0.0:8765` by default; if that port is taken it tries the next
 
 ```sh
 './LAN Drop.app/Contents/MacOS/lan-drop' --port 9000
-./lan-drop-linux-x64 --headless --port 8765
+./lan-drop-1.0.0-linux-x64 --headless --port 8765
 ```
 
 `--headless` starts only the HTTP server, which suits a Linux box with no desktop; `--port 0` picks a free port and writes the address to stdout. A normal desktop launch shows no console window on Windows.
@@ -93,7 +99,7 @@ A plain-HTTP page on a LAN is limited by browser clipboard permissions: if the p
 Development requirements: Rust 1.88.0 (pinned by `rust-toolchain.toml`), [Task](https://taskfile.dev/), Python 3.9+. Building all three platforms additionally needs **macOS + Xcode Command Line Tools + a running Docker**. The macOS SDK comes from the host; Windows and Linux use the Docker toolchain in this repository. The first build downloads dependencies; later ones reuse the Cargo and Docker caches.
 
 ```sh
-task build          # release binaries for all three platforms, plus SHA256SUMS
+task build          # release archives for all three platforms, plus SHA256SUMS
 task build:native   # current system only; Intel Mac supported too
 task build:cross    # Windows x64 and Linux x64 via Docker
 task run            # run in development

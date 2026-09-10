@@ -5,17 +5,17 @@ tasks:
     cmds: [task --list]
 
   build:
-    desc: 编译 macOS arm64、Windows x64、Linux x64 三个独立二进制到 dist（macOS 主机 + Docker）
+    desc: 编译 macOS arm64、Windows x64、Linux x64 三个平台的发布压缩包到 dist（macOS 主机 + Docker）
     cmds:
       - python3 scripts/build.py all
 
   build:native:
-    desc: 编译当前系统的独立二进制到 dist
+    desc: 编译当前系统的发布压缩包到 dist
     cmds:
       - python3 scripts/build.py native
 
   build:cross:
-    desc: 使用 Docker 编译 Windows x64 和 Linux x64 到 dist
+    desc: 使用 Docker 编译 Windows x64 和 Linux x64 的压缩包到 dist
     cmds:
       - python3 scripts/build.py cross
 
